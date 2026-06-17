@@ -1,36 +1,97 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Helper Comparison
 
-## Getting Started
+Manage and rank domestic helper applications from [HelperPlace](https://www.helperplace.com) for Singapore hiring.
 
-First, run the development server:
+## Features
+
+- **Daily scrape** — Playwright logs into your HelperPlace employer account and pulls applicant profiles
+- **Parse & filter** — Extracts skills, experience, reference letters, start dates; applies your hard filters
+- **Rank** — Configurable scoring for baby care, child care, housework, cooking, and more
+- **Dashboard** — Inbox, daily summary, excluded list, candidate detail, preferences
+- **WhatsApp** — Click-to-chat links with message templates (you send manually)
+
+## Setup
+
+### 1. Install dependencies
+
+```bash
+npm install
+cd scraper && npm install && cd ..
+```
+
+### 2. Convex
+
+```bash
+npx convex dev
+```
+
+Copy the deployment URL into `.env.local`:
+
+```
+NEXT_PUBLIC_CONVEX_URL=https://your-deployment.convex.cloud
+```
+
+Set `INGEST_SECRET` in Convex dashboard environment variables (Settings → Environment Variables) **and** in `.env.local`.
+
+### 3. Environment variables
+
+Copy `.env.example` to `.env.local` and fill in:
+
+| Variable | Where |
+|----------|--------|
+| `NEXT_PUBLIC_CONVEX_URL` | Vercel + local |
+| `INGEST_SECRET` | Vercel, Convex, GitHub Actions, local |
+| `DASHBOARD_PASSWORD` | Vercel + local |
+| `HELPERPLACE_EMAIL` | GitHub Actions secrets, scraper `.env` |
+| `HELPERPLACE_PASSWORD` | GitHub Actions secrets, scraper `.env` |
+| `HELPERPLACE_APPLICANTS_URL` | Your job applicants page URL (while logged in as employer) |
+| `INGEST_URL` | GitHub Actions — your deployed `https://your-app.vercel.app/api/ingest` |
+
+### 4. Run locally
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Visit http://localhost:3000 and sign in with `DASHBOARD_PASSWORD`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 5. Run scraper manually
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+cd scraper
+cp ../.env.example .env   # fill credentials
+npm run scrape -- --dry-run   # saves JSON to scraper/output/
+npm run scrape                # POSTs to ingest API
+```
 
-## Learn More
+### 6. Deploy to Vercel
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+npx vercel
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Add the same env vars in Vercel project settings.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### 7. Daily GitHub Actions cron
 
-## Deploy on Vercel
+Add repository secrets: `HELPERPLACE_EMAIL`, `HELPERPLACE_PASSWORD`, `HELPERPLACE_APPLICANTS_URL`, `INGEST_URL`, `INGEST_SECRET`.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Workflow runs daily at 8am SGT (`.github/workflows/daily-scrape.yml`).
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Hard filters (defaults)
+
+- Reference letter from past employer
+- Can start by October 2026
+- Finished contract or present in Singapore
+- Speaks English
+
+Adjust on the **Preferences** page.
+
+## Project structure
+
+```
+app/           Next.js dashboard
+convex/        Database, ranking, ingest API
+scraper/       Playwright daily scraper
+components/    UI components
+```

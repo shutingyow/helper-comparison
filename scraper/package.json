@@ -1,0 +1,22 @@
+{
+  "name": "helper-comparison-scraper",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "scrape": "tsx scrape.ts",
+    "scrape:full": "tsx scrape.ts --full",
+    "scrape:dry": "tsx scrape.ts --dry-run",
+    "debug:applicants": "tsx debug-applicants.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "playwright": "^1.51.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.10",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.2"
+  }
+}
