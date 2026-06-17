@@ -75,7 +75,7 @@ export async function resolveApplicantsPage(
 ): Promise<string> {
   const target = applicantsUrl?.trim() || DEFAULT_APPLICANTS_URL;
 
-  await assertEmployerLoggedIn(page);
+  await assertEmployerLoggedIn(page, target);
 
   const strategies: Array<{ name: string; run: () => Promise<boolean> }> = [
     { name: "direct URL", run: () => gotoApplicantsUrl(page, target) },

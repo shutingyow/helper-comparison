@@ -47,8 +47,8 @@ async function main(): Promise<void> {
 
   try {
     console.log("Logging in to HelperPlace...");
-    await login(page, email, password);
-    await assertEmployerLoggedIn(page);
+    await login(page, email, password, { afterLoginUrl: applicantsUrl });
+    await assertEmployerLoggedIn(page, applicantsUrl);
     console.log("Logged in as employer.");
 
     console.log("Navigating to applicants...");

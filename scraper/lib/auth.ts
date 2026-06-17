@@ -32,7 +32,12 @@ type LoginStep =
   | "submit-failed"
   | "session-not-established";
 
-export async function login(page: Page, email: string, password: string): Promise<void> {
+export async function login(
+  page: Page,
+  email: string,
+  password: string,
+  options?: { afterLoginUrl?: string },
+): Promise<void> {
   const failures: string[] = [];
 
   const attempts: Array<{ label: string; run: () => Promise<boolean> }> = [
@@ -49,6 +54,7 @@ export async function login(page: Page, email: string, password: string): Promis
   for (const attempt of attempts) {
     try {
       if (await attempt.run()) {
+        await establishEmployerSession(page, options?.afterLoginUrl);
         return;
       }
       failures.push(`${attempt.label}: login session was not established after submit`);
@@ -69,6 +75,16 @@ export async function login(page: Page, email: string, password: string): Promis
 
 /** True when logged in as an employer (not the public catalog visitor). */
 export async function isEmployerLoggedIn(page: Page): Promise<boolean> {
+  const url = page.url();
+
+  if (url.includes("/login")) {
+    return false;
+  }
+
+  if (isEmployerApplicantsUrl(url) || url.includes("/dashboard") || url.includes("/manage-job")) {
+    return true;
+  }
+
   const loginCta = page
     .locator("a, button")
     .filter({ hasText: /^Log\s*in$|^Login$/i })
@@ -84,14 +100,11 @@ export async function isEmployerLoggedIn(page: Page): Promise<boolean> {
     page.locator('a[href*="logout"]').first(),
     page.locator('a, button').filter({ hasText: /log\s*out/i }).first(),
     page.locator('a[href*="applicant"]').first(),
+    page.locator('a, button, [role="tab"]').filter({ hasText: /^Applicant\b/i }).first(),
   ];
 
-  if (page.url().includes("/dashboard")) {
-    return true;
-  }
-
   for (const signal of employerSignals) {
-    if (await signal.isVisible({ timeout: 1_500 }).catch(() => false)) {
+    if (await signal.isVisible({ timeout: 2_000 }).catch(() => false)) {
       return true;
     }
   }
@@ -99,12 +112,21 @@ export async function isEmployerLoggedIn(page: Page): Promise<boolean> {
   return false;
 }
 
-export async function assertEmployerLoggedIn(page: Page): Promise<void> {
+export async function assertEmployerLoggedIn(
+  page: Page,
+  afterLoginUrl?: string,
+): Promise<void> {
   if (await isEmployerLoggedIn(page)) {
     return;
   }
 
   if (await waitForEmployerSession(page)) {
+    return;
+  }
+
+  await establishEmployerSession(page, afterLoginUrl);
+
+  if (await isEmployerLoggedIn(page)) {
     return;
   }
 
@@ -338,14 +360,22 @@ async function waitForLoginComplete(page: Page): Promise<boolean> {
     const url = page.url();
     const onLoginPage = url.includes("/login");
     const onDashboard = url.includes("/dashboard");
+    const onEmployerApplicants = isEmployerApplicantsUrl(url);
     const loginFormVisible = await page
       .locator("#password, input[type='password']")
       .isVisible({ timeout: 500 })
       .catch(() => false);
 
-    if (onDashboard || (!onLoginPage && !loginFormVisible)) {
+    if (onDashboard || onEmployerApplicants) {
       await delay(1_000);
       return true;
+    }
+
+    if (!onLoginPage && !loginFormVisible) {
+      if (await isEmployerLoggedIn(page)) {
+        await delay(1_000);
+        return true;
+      }
     }
 
     const inlineError = await readInlineLoginError(page);
@@ -359,8 +389,49 @@ async function waitForLoginComplete(page: Page): Promise<boolean> {
   return false;
 }
 
+function isEmployerApplicantsUrl(url: string): boolean {
+  try {
+    const path = new URL(url).pathname.toLowerCase();
+    return (
+      path.includes("/applicant") ||
+      path.includes("/application") ||
+      path.includes("/applications")
+    );
+  } catch {
+    return false;
+  }
+}
+
+async function establishEmployerSession(
+  page: Page,
+  preferredUrl?: string,
+): Promise<void> {
+  const targets = [
+    preferredUrl?.trim(),
+    `${BASE_URL}/dashboard`,
+    `${BASE_URL}/manage-job`,
+    `${BASE_URL}/find-candidate-singapore/applicant`,
+  ].filter((url): url is string => Boolean(url));
+
+  for (const target of targets) {
+    await page
+      .goto(target, { waitUntil: "domcontentloaded", timeout: 45_000 })
+      .catch(() => undefined);
+    await dismissOverlays(page);
+    await delay(2_500);
+
+    if (page.url().includes("/login")) {
+      continue;
+    }
+
+    if (await isEmployerLoggedIn(page)) {
+      return;
+    }
+  }
+}
+
 async function waitForEmployerSession(page: Page): Promise<boolean> {
-  for (let attempt = 0; attempt < 8; attempt++) {
+  for (let attempt = 0; attempt < 12; attempt++) {
     if (await isEmployerLoggedIn(page)) {
       return true;
     }
