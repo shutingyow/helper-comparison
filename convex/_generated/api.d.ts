@@ -14,6 +14,7 @@ import type * as ingestPublic from "../ingestPublic.js";
 import type * as lib_candidateFields from "../lib/candidateFields.js";
 import type * as lib_phone from "../lib/phone.js";
 import type * as lib_ranking from "../lib/ranking.js";
+import type * as lib_workHistory from "../lib/workHistory.js";
 import type * as outreach from "../outreach.js";
 import type * as preferences from "../preferences.js";
 import type * as scrapeRuns from "../scrapeRuns.js";
@@ -31,6 +32,7 @@ declare const fullApi: ApiFromModules<{
   "lib/candidateFields": typeof lib_candidateFields;
   "lib/phone": typeof lib_phone;
   "lib/ranking": typeof lib_ranking;
+  "lib/workHistory": typeof lib_workHistory;
   outreach: typeof outreach;
   preferences: typeof preferences;
   scrapeRuns: typeof scrapeRuns;

@@ -18,6 +18,13 @@ export function useLatestOutreach(candidateId: Id<"candidates"> | undefined) {
   );
 }
 
+export function useLatestOutreachBatch(candidateIds: Id<"candidates">[]) {
+  return useQuery(
+    api.outreach.getLatestForCandidates,
+    candidateIds.length > 0 ? { candidateIds } : "skip",
+  );
+}
+
 export function useRecordOutreachOpened() {
   return useMutation(api.outreach.recordOpened);
 }

@@ -1,0 +1,39 @@
+import { Badge } from "@/components/ui/badge";
+import type { Doc } from "@/convex/_generated/dataModel";
+
+type OutreachMessage = Doc<"outreachMessages">;
+export type OutreachTrackingStatus = OutreachMessage["status"] | "not_contacted";
+
+export const OUTREACH_STATUS_LABELS: Record<OutreachTrackingStatus, string> = {
+  not_contacted: "Not contacted",
+  opened: "Opened",
+  sent: "Sent",
+  replied: "Replied",
+};
+
+const OUTREACH_STATUS_STYLES: Record<OutreachTrackingStatus, string> = {
+  not_contacted: "border-stone-200 bg-stone-50 text-stone-600",
+  opened: "border-sky-200 bg-sky-50 text-sky-800",
+  sent: "border-amber-200 bg-amber-50 text-amber-900",
+  replied: "border-emerald-200 bg-emerald-50 text-emerald-800",
+};
+
+export function getOutreachTrackingStatus(
+  latest: OutreachMessage | null | undefined,
+): OutreachTrackingStatus {
+  return latest?.status ?? "not_contacted";
+}
+
+export function OutreachStatusBadge({
+  latest,
+}: {
+  latest: OutreachMessage | null | undefined;
+}) {
+  const status = getOutreachTrackingStatus(latest);
+
+  return (
+    <Badge variant="outline" className={OUTREACH_STATUS_STYLES[status]}>
+      {OUTREACH_STATUS_LABELS[status]}
+    </Badge>
+  );
+}

@@ -49,6 +49,30 @@ export const getLatestByCandidate = query({
   },
 });
 
+const latestForCandidate = v.object({
+  candidateId: v.id("candidates"),
+  latest: v.union(outreachDoc, v.null()),
+});
+
+export const getLatestForCandidates = query({
+  args: { candidateIds: v.array(v.id("candidates")) },
+  returns: v.array(latestForCandidate),
+  handler: async (ctx, args) => {
+    return await Promise.all(
+      args.candidateIds.map(async (candidateId) => {
+        const latest = await ctx.db
+          .query("outreachMessages")
+          .withIndex("by_candidate_opened", (q) =>
+            q.eq("candidateId", candidateId),
+          )
+          .order("desc")
+          .first();
+        return { candidateId, latest: latest ?? null };
+      }),
+    );
+  },
+});
+
 export const recordOpened = mutation({
   args: {
     candidateId: v.id("candidates"),

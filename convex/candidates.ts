@@ -10,6 +10,7 @@ import {
   type CandidateInput,
 } from "./lib/ranking";
 import { normalizeSingaporePhone } from "./lib/phone";
+import { sortWorkHistoryByRecency } from "./lib/workHistory";
 
 const candidateDoc = v.object({
   _id: v.id("candidates"),
@@ -242,18 +243,27 @@ export const listToday = query({
 });
 
 export const listForOutreach = query({
-  args: { status: v.optional(candidateStatus) },
+  args: {
+    status: v.optional(candidateStatus),
+    includeAll: v.optional(v.boolean()),
+  },
   returns: v.array(candidateDoc),
   handler: async (ctx, args) => {
     let results = await ctx.db.query("candidates").collect();
     results = results.filter((c) => c.passesHardFilters);
 
-    if (args.status) {
+    if (args.includeAll) {
+      results = results.filter(
+        (c) =>
+          c.status === "new" ||
+          c.status === "shortlisted" ||
+          c.status === "messaged" ||
+          c.status === "interviewing",
+      );
+    } else if (args.status) {
       results = results.filter((c) => c.status === args.status);
     } else {
-      results = results.filter(
-        (c) => c.status === "new" || c.status === "shortlisted",
-      );
+      results = results.filter((c) => c.status === "shortlisted");
     }
 
     return results.sort((a, b) => b.score - a.score);
@@ -322,6 +332,7 @@ export const recalculateScores = mutation({
         availableFromTimestamp: enriched.availableFromTimestamp,
         phone: enriched.phone,
         whatsapp: enriched.whatsapp,
+        workHistory: sortWorkHistoryByRecency(candidate.workHistory),
         filterResults: enriched.filterResults,
         passesHardFilters: enriched.passesHardFilters,
         score: enriched.score,

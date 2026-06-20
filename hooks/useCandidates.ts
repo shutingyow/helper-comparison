@@ -34,8 +34,11 @@ export function useLatestScrapeRun() {
   return useQuery(api.scrapeRuns.latest, {});
 }
 
-export function useOutreachCandidates() {
-  return useQuery(api.candidates.listForOutreach, {});
+export function useOutreachCandidates(args?: {
+  status?: CandidateStatus;
+  includeAll?: boolean;
+}) {
+  return useQuery(api.candidates.listForOutreach, args ?? {});
 }
 
 export function useUpdateStatus() {
