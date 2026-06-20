@@ -1,5 +1,6 @@
 import type { Page } from "playwright";
 import type { ScrapeCandidate } from "../types.js";
+import { dismissOverlays } from "../lib/auth.js";
 import {
   delay,
   extractHelperPlaceId,
@@ -158,25 +159,61 @@ function extractLabeledValue(text: string, pattern: RegExp): string | undefined 
 }
 
 async function extractContactFromButton(page: Page): Promise<string | undefined> {
-  const contactSelectors = [
-    'a[href^="tel:"]',
-    'a[href*="whatsapp"]',
-    'a[href*="wa.me"]',
-    'button:has-text("Contact")',
-    'a:has-text("Contact")',
-  ];
+  const direct = await extractVisiblePhoneFromPage(page);
+  if (direct) return direct;
 
-  for (const selector of contactSelectors) {
-    const el = page.locator(selector).first();
-    if (!(await el.isVisible({ timeout: 500 }).catch(() => false))) continue;
+  try {
+    await dismissOverlays(page);
 
-    const href = await el.getAttribute("href");
-    if (href?.startsWith("tel:")) {
-      return extractSingaporePhone(href.replace("tel:", ""));
+    const contactBtn = page.locator("button.contact, .btn.hp-apply-btn.contact").first();
+    if (!(await contactBtn.isVisible({ timeout: 2_000 }).catch(() => false))) {
+      return undefined;
     }
-    if (href?.includes("whatsapp") || href?.includes("wa.me")) {
-      return extractSingaporePhone(href);
+
+    await contactBtn.click({ force: true });
+    await page.waitForTimeout(1_000);
+
+    const callTab = page.locator(".contact-btn").first();
+    if (!(await callTab.isVisible({ timeout: 2_000 }).catch(() => false))) {
+      return undefined;
     }
+
+    await callTab.click({ force: true });
+    await page.waitForTimeout(1_000);
+
+    return await extractVisiblePhoneFromPage(page);
+  } catch {
+    return undefined;
+  }
+}
+
+async function extractVisiblePhoneFromPage(page: Page): Promise<string | undefined> {
+  const telLink = page.locator('a[href^="tel:"]').first();
+  if (await telLink.isVisible({ timeout: 500 }).catch(() => false)) {
+    const href = await telLink.getAttribute("href");
+    if (href) {
+      const fromHref = extractSingaporePhone(href.replace(/^tel:/i, ""));
+      if (fromHref) return fromHref;
+    }
+    const text = await telLink.innerText().catch(() => "");
+    const fromText = extractSingaporePhone(text);
+    if (fromText) return fromText;
+  }
+
+  const waLink = page.locator('a[href*="wa.me"], a[href*="whatsapp"]').first();
+  if (await waLink.isVisible({ timeout: 500 }).catch(() => false)) {
+    const href = await waLink.getAttribute("href");
+    if (href) {
+      const fromHref = extractSingaporePhone(href);
+      if (fromHref) return fromHref;
+    }
+  }
+
+  const dialog = page.locator("mat-dialog-container, [role='dialog']").first();
+  if (await dialog.isVisible({ timeout: 500 }).catch(() => false)) {
+    const dialogText = await dialog.innerText().catch(() => "");
+    const fromDialog = extractSingaporePhone(dialogText);
+    if (fromDialog) return fromDialog;
   }
 
   return undefined;
@@ -206,7 +243,8 @@ export async function parseProfilesWithRateLimit(
       console.log(
         `  ✓ ${candidate.name} (${candidate.helperPlaceId}) — ` +
           `${candidate.skills.length} skills, ${candidate.workHistory.length} jobs, ` +
-          `${candidate.referenceLetterCount} ref letter(s)`,
+          `${candidate.referenceLetterCount} ref letter(s)` +
+          (candidate.phone ? `, phone ${candidate.phone}` : ", no phone"),
       );
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);

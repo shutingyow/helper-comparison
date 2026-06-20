@@ -220,8 +220,10 @@ async function loginViaHomepagePopup(
   return waitForLoginComplete(page);
 }
 
-async function dismissOverlays(page: Page): Promise<void> {
+export async function dismissOverlays(page: Page): Promise<void> {
   const cookieSelectors = [
+    'a.allow-btn:has-text("Accept all cookies")',
+    'button:has-text("Accept all cookies")',
     'button:has-text("Accept")',
     'button:has-text("Accept all")',
     'button:has-text("I agree")',

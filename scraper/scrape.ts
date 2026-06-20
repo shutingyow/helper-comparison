@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
 import { assertEmployerLoggedIn, login } from "./lib/auth.js";
 import { collectApplicantProfileUrls, resolveApplicantsPage } from "./lib/applicants.js";
-import { fetchKnownHelperPlaceIds, ingestCandidates } from "./lib/ingest.js";
+import { fetchKnownHelperPlaceIds, fetchMissingPhoneHelperPlaceIds, ingestCandidates } from "./lib/ingest.js";
 import { parseProfilesWithRateLimit } from "./parsers/profile.js";
 import { extractHelperPlaceId } from "./lib/utils.js";
 import type { IngestPayload, ScrapeRun } from "./types.js";
@@ -62,16 +62,24 @@ async function main(): Promise<void> {
     let urlsToParse = profileUrls;
     if (!fullScrape && !dryRun) {
       const knownIds = await fetchKnownHelperPlaceIds();
-      urlsToParse = profileUrls.filter((url) => !knownIds.has(extractHelperPlaceId(url)));
+      const missingPhoneIds = await fetchMissingPhoneHelperPlaceIds();
+      urlsToParse = profileUrls.filter((url) => {
+        const id = extractHelperPlaceId(url);
+        return !knownIds.has(id) || missingPhoneIds.has(id);
+      });
+      const newCount = profileUrls.filter(
+        (url) => !knownIds.has(extractHelperPlaceId(url)),
+      ).length;
+      const backfillCount = urlsToParse.length - newCount;
       console.log(
-        `${urlsToParse.length} new profile(s) to parse (${knownIds.size} already in dashboard).`,
+        `${urlsToParse.length} profile(s) to parse (${newCount} new, ${backfillCount} phone backfill, ${knownIds.size} already in dashboard).`,
       );
     } else if (fullScrape) {
       console.log("Full scrape: parsing all profiles (updates existing records too).");
     }
 
     if (urlsToParse.length === 0 && profileUrls.length > 0) {
-      console.log("No new applicants — dashboard is up to date.");
+      console.log("No new applicants and no phone backfill needed — dashboard is up to date.");
       if (!dryRun) {
         const scrapeRun: ScrapeRun = {
           startedAt,

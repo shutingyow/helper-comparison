@@ -52,3 +52,18 @@ export const listKnownHelperPlaceIds = query({
     return candidates.map((c) => c.helperPlaceId);
   },
 });
+
+/** Used by the scraper to backfill phone numbers on incremental runs. */
+export const listMissingPhoneHelperPlaceIds = query({
+  args: { secret: v.string() },
+  returns: v.array(v.string()),
+  handler: async (ctx, args) => {
+    const expectedSecret = process.env.INGEST_SECRET;
+    if (!expectedSecret || args.secret !== expectedSecret) {
+      throw new Error("Unauthorized");
+    }
+
+    const candidates = await ctx.db.query("candidates").collect();
+    return candidates.filter((c) => !c.phone).map((c) => c.helperPlaceId);
+  },
+});

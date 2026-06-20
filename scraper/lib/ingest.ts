@@ -6,6 +6,7 @@ const DEFAULT_INGEST_URL = "http://localhost:3000/api/ingest";
 export function getIngestEndpoints(): {
   ingestUrl: string;
   knownIdsUrl: string;
+  missingPhoneIdsUrl: string;
 } {
   const raw = (process.env.INGEST_URL ?? DEFAULT_INGEST_URL).trim();
   let origin: string;
@@ -17,6 +18,7 @@ export function getIngestEndpoints(): {
   return {
     ingestUrl: `${origin}/api/ingest`,
     knownIdsUrl: `${origin}/api/ingest/known-ids`,
+    missingPhoneIdsUrl: `${origin}/api/ingest/missing-phone-ids`,
   };
 }
 
@@ -76,6 +78,41 @@ export async function fetchKnownHelperPlaceIds(): Promise<Set<string>> {
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     console.warn(`${message} — parsing all profiles.`);
+    return new Set();
+  }
+}
+
+export async function fetchMissingPhoneHelperPlaceIds(): Promise<Set<string>> {
+  const secret = process.env.INGEST_SECRET;
+  if (!secret) {
+    return new Set();
+  }
+
+  const { missingPhoneIdsUrl } = getIngestEndpoints();
+  console.log(`Fetching candidates missing phone from ${missingPhoneIdsUrl} ...`);
+
+  try {
+    const response = await fetch(missingPhoneIdsUrl, {
+      headers: { "x-ingest-secret": secret },
+    });
+
+    if (!response.ok) {
+      console.warn(
+        `Could not fetch missing-phone IDs (HTTP ${response.status}) — skipping phone backfill.`,
+      );
+      return new Set();
+    }
+
+    const body = await readJsonResponse<{ helperPlaceIds?: string[] }>(
+      response,
+      "missing-phone-ids",
+    );
+    const ids = new Set(body.helperPlaceIds ?? []);
+    console.log(`Found ${ids.size} candidate(s) missing phone numbers.`);
+    return ids;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.warn(`${message} — skipping phone backfill.`);
     return new Set();
   }
 }
