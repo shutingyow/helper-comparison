@@ -30,6 +30,29 @@ jobs:
         working-directory: scraper
         run: npx playwright install --with-deps chromium
 
+      - name: Verify ingest API
+        env:
+          INGEST_URL: ${{ secrets.INGEST_URL }}
+          INGEST_SECRET: ${{ secrets.INGEST_SECRET }}
+        run: |
+          ORIGIN=$(node -e "console.log(new URL(process.env.INGEST_URL).origin)")
+          URL="${ORIGIN}/api/ingest/known-ids"
+          echo "Checking ${URL}"
+          STATUS=$(curl -sS -o /tmp/ingest-check.json -w "%{http_code}" \
+            -H "x-ingest-secret: ${INGEST_SECRET}" \
+            "${URL}")
+          echo "known-ids HTTP ${STATUS}"
+          head -c 300 /tmp/ingest-check.json
+          echo ""
+          if [ "$STATUS" != "200" ]; then
+            echo "Ingest preflight failed — check INGEST_URL origin and INGEST_SECRET on GitHub + Vercel"
+            exit 1
+          fi
+          if ! grep -q '"helperPlaceIds"' /tmp/ingest-check.json; then
+            echo "Ingest preflight returned non-JSON — redeploy Vercel and verify /api/ingest/known-ids exists"
+            exit 1
+          fi
+
       - name: Run scraper
         working-directory: scraper
         env:
