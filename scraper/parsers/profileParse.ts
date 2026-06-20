@@ -1,4 +1,5 @@
 import type { WorkHistoryEntry } from "../types.js";
+import { sortWorkHistoryByRecency } from "../lib/workHistory.js";
 
 /** Collect sibling text until the next h2 (HelperPlace uses h2 sections, h3/h4 content). */
 export function parseSectionFromHeadingLines(
@@ -154,7 +155,7 @@ export function parseWorkHistory(text: string): WorkHistoryEntry[] {
     });
   }
 
-  return entries;
+  return sortWorkHistoryByRecency(entries);
 }
 
 export function parseExpectations(text: string): {

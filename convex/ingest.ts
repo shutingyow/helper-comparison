@@ -11,6 +11,7 @@ import {
   passesAllHardFilters,
 } from "./lib/ranking";
 import { normalizeSingaporePhone } from "./lib/phone";
+import { sortWorkHistoryByRecency } from "./lib/workHistory";
 
 const scrapeRunInput = v.object({
   startedAt: v.number(),
@@ -69,6 +70,8 @@ export const batch = internalMutation({
         ...prefs.hardFilters,
       };
 
+      const sortedWorkHistory = sortWorkHistoryByRecency(raw.workHistory);
+
       const candidateInput = {
         hasReferenceLetter: raw.hasReferenceLetter,
         referenceLetterCount: raw.referenceLetterCount,
@@ -84,7 +87,7 @@ export const batch = internalMutation({
         gender: raw.gender,
         nationality: raw.nationality,
         aboutMe: raw.aboutMe,
-        workHistory: raw.workHistory,
+        workHistory: sortedWorkHistory,
       };
 
       const filterResults = evaluateHardFilters(
@@ -125,7 +128,7 @@ export const batch = internalMutation({
         personalityTraits: raw.personalityTraits,
         hasReferenceLetter: raw.hasReferenceLetter,
         referenceLetterCount: raw.referenceLetterCount,
-        workHistory: raw.workHistory,
+        workHistory: sortedWorkHistory,
         aboutMe: raw.aboutMe,
         education: raw.education,
         salaryExpectation: raw.salaryExpectation,

@@ -15,6 +15,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { ConvexGuard } from "@/components/ConvexGuard";
 import type { Candidate, CandidateStatus } from "@/lib/types";
 import { formatDate } from "@/lib/utils";
+import { sortWorkHistoryByRecency } from "@/lib/workHistory";
 import { getCandidatePhone } from "@/lib/whatsapp";
 import { PhoneBadge } from "@/components/PhoneBadge";
 import { WhatsAppComposerSingle } from "@/components/WhatsAppComposer";
@@ -79,6 +80,7 @@ function CandidateProfile({
 }) {
   const phone = getCandidatePhone(candidate);
   const outreachHistory = useOutreachHistory(candidate._id);
+  const workHistory = sortWorkHistoryByRecency(candidate.workHistory);
 
   return (
     <div className="space-y-6">
@@ -261,13 +263,13 @@ function CandidateProfile({
         </Card>
       )}
 
-      {candidate.workHistory.length > 0 && (
+      {workHistory.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle>Work history</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {candidate.workHistory.map((job, i) => (
+            {workHistory.map((job, i) => (
               <div
                 key={i}
                 className="border-b border-stone-100 pb-4 last:border-0 last:pb-0"

@@ -46,7 +46,7 @@ export type CandidateInput = {
   }>;
 };
 
-const TARGET_START = new Date("2026-10-01T00:00:00Z").getTime();
+import { sortWorkHistoryByRecency } from "./workHistory";
 const TWO_WEEKS_MS = 14 * 24 * 60 * 60 * 1000;
 
 function targetDeadlineMs(targetStartDate: string): number {
@@ -60,7 +60,7 @@ function targetDeadlineMs(targetStartDate: string): number {
 function targetStartMs(targetStartDate: string): number {
   const d = new Date(targetStartDate);
   if (Number.isNaN(d.getTime())) {
-    return TARGET_START;
+    return new Date("2026-10-01T00:00:00Z").getTime();
   }
   return d.getTime();
 }
@@ -137,11 +137,15 @@ function hasChildCareInWorkEntry(entry: {
   return textMatchesPatterns(workEntrySearchText(entry), CHILD_CARE_PATTERNS);
 }
 
-function getRecentWorkHistory(
+export function getRecentWorkHistory(
   workHistory: CandidateInput["workHistory"],
   count = 2,
 ): CandidateInput["workHistory"] {
-  return workHistory.slice(0, count);
+  const withPeriod = workHistory.map((entry) => ({
+    ...entry,
+    period: entry.period ?? "",
+  }));
+  return sortWorkHistoryByRecency(withPeriod).slice(0, count);
 }
 
 export function hasBabyCareInRecentWork(
