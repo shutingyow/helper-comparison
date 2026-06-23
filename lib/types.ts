@@ -4,9 +4,14 @@ export type CandidateStatus =
   | "new"
   | "shortlisted"
   | "messaged"
+  | "interview_scheduled"
   | "interviewing"
   | "rejected"
   | "hired";
+
+export type InterviewType = "phone" | "video" | "in_person";
+
+export type InterviewStatus = "scheduled" | "completed" | "no_show" | "cancelled";
 
 export type Candidate = Doc<"candidates">;
 export type CandidateId = Id<"candidates">;
@@ -72,9 +77,23 @@ export const STATUS_LABELS: Record<CandidateStatus, string> = {
   new: "New",
   shortlisted: "Shortlisted",
   messaged: "Messaged",
+  interview_scheduled: "Interview Scheduled",
   interviewing: "Interviewing",
   rejected: "Rejected",
   hired: "Hired",
+};
+
+export const INTERVIEW_TYPE_LABELS: Record<InterviewType, string> = {
+  phone: "Phone",
+  video: "Video",
+  in_person: "In person",
+};
+
+export const INTERVIEW_STATUS_LABELS: Record<InterviewStatus, string> = {
+  scheduled: "Scheduled",
+  completed: "Completed",
+  no_show: "No show",
+  cancelled: "Cancelled",
 };
 
 export const FILTER_LABELS: Record<string, string> = {

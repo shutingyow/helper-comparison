@@ -1,6 +1,12 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
-import { candidateStatus, filterResult, workHistoryEntry } from "./schema";
+import {
+  candidateStatus,
+  filterResult,
+  interviewStatus,
+  interviewType,
+  workHistoryEntry,
+} from "./schema";
 import { getCurrentUser } from "./lib/auth";
 import {
   computeScore,
@@ -50,6 +56,11 @@ const candidateDoc = v.object({
   passesHardFilters: v.boolean(),
   filterResults: v.array(filterResult),
   messagedAt: v.optional(v.number()),
+  interviewScheduledAt: v.optional(v.number()),
+  interviewType: v.optional(interviewType),
+  interviewLocationOrLink: v.optional(v.string()),
+  interviewStatus: v.optional(interviewStatus),
+  interviewNotes: v.optional(v.string()),
   firstSeenAt: v.number(),
   lastSeenAt: v.number(),
 });
@@ -142,6 +153,24 @@ function belongsToUser(
   userId: import("./_generated/dataModel").Id<"users">,
 ) {
   return !candidate.userId || candidate.userId === userId;
+}
+
+async function logCandidateEvent(
+  ctx: import("./_generated/server").MutationCtx,
+  args: {
+    userId: import("./_generated/dataModel").Id<"users">;
+    candidateId: import("./_generated/dataModel").Id<"candidates">;
+    type: string;
+    metadata?: unknown;
+  },
+) {
+  await ctx.db.insert("candidateEvents", {
+    userId: args.userId,
+    candidateId: args.candidateId,
+    type: args.type,
+    metadata: args.metadata,
+    createdAt: Date.now(),
+  });
 }
 
 export const list = query({
@@ -305,6 +334,7 @@ export const listForOutreach = query({
           c.status === "new" ||
           c.status === "shortlisted" ||
           c.status === "messaged" ||
+          c.status === "interview_scheduled" ||
           c.status === "interviewing",
       );
     } else if (args.status) {
@@ -371,6 +401,163 @@ export const updateStatus = mutation({
     }
 
     await ctx.db.patch("candidates", args.candidateId, updates);
+    return null;
+  },
+});
+
+export const listUpcomingInterviews = query({
+  args: { now: v.number() },
+  returns: v.array(candidateDoc),
+  handler: async (ctx, args) => {
+    const user = await getCurrentUser(ctx);
+    const sevenDaysLater = args.now + 7 * 24 * 60 * 60 * 1000;
+    const results = await ctx.db
+      .query("candidates")
+      .withIndex("by_user", (q) => q.eq("userId", user._id))
+      .collect();
+
+    return results
+      .filter(
+        (c) =>
+          c.interviewStatus === "scheduled" &&
+          c.interviewScheduledAt != null &&
+          c.interviewScheduledAt >= args.now &&
+          c.interviewScheduledAt <= sevenDaysLater,
+      )
+      .sort((a, b) => a.interviewScheduledAt! - b.interviewScheduledAt!);
+  },
+});
+
+export const scheduleInterview = mutation({
+  args: {
+    candidateId: v.id("candidates"),
+    interviewScheduledAt: v.number(),
+    interviewType: interviewType,
+    interviewLocationOrLink: v.optional(v.string()),
+    interviewNotes: v.optional(v.string()),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const user = await getCurrentUser(ctx);
+    const candidate = await ctx.db.get("candidates", args.candidateId);
+    if (!candidate || !belongsToUser(candidate, user._id)) {
+      throw new Error("Candidate not found");
+    }
+
+    await ctx.db.patch("candidates", args.candidateId, {
+      interviewScheduledAt: args.interviewScheduledAt,
+      interviewType: args.interviewType,
+      interviewLocationOrLink: args.interviewLocationOrLink,
+      interviewNotes: args.interviewNotes,
+      interviewStatus: "scheduled",
+      status: "interview_scheduled",
+    });
+
+    await logCandidateEvent(ctx, {
+      userId: user._id,
+      candidateId: args.candidateId,
+      type: "interview_scheduled",
+      metadata: {
+        interviewScheduledAt: args.interviewScheduledAt,
+        interviewType: args.interviewType,
+        interviewLocationOrLink: args.interviewLocationOrLink,
+      },
+    });
+
+    return null;
+  },
+});
+
+export const updateInterview = mutation({
+  args: {
+    candidateId: v.id("candidates"),
+    interviewScheduledAt: v.optional(v.number()),
+    interviewType: v.optional(interviewType),
+    interviewLocationOrLink: v.optional(v.string()),
+    interviewNotes: v.optional(v.string()),
+    interviewStatus: v.optional(interviewStatus),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const user = await getCurrentUser(ctx);
+    const candidate = await ctx.db.get("candidates", args.candidateId);
+    if (!candidate || !belongsToUser(candidate, user._id)) {
+      throw new Error("Candidate not found");
+    }
+
+    const updates: {
+      interviewScheduledAt?: number;
+      interviewType?: typeof args.interviewType;
+      interviewLocationOrLink?: string;
+      interviewNotes?: string;
+      interviewStatus?: typeof args.interviewStatus;
+      status?: "interview_scheduled" | "interviewing";
+    } = {};
+
+    if (args.interviewScheduledAt !== undefined) {
+      updates.interviewScheduledAt = args.interviewScheduledAt;
+    }
+    if (args.interviewType !== undefined) updates.interviewType = args.interviewType;
+    if (args.interviewLocationOrLink !== undefined) {
+      updates.interviewLocationOrLink = args.interviewLocationOrLink;
+    }
+    if (args.interviewNotes !== undefined) updates.interviewNotes = args.interviewNotes;
+    if (args.interviewStatus !== undefined) {
+      updates.interviewStatus = args.interviewStatus;
+      if (args.interviewStatus === "scheduled") {
+        updates.status = "interview_scheduled";
+      } else if (
+        args.interviewStatus === "completed" ||
+        args.interviewStatus === "no_show"
+      ) {
+        updates.status = "interviewing";
+      }
+    }
+
+    await ctx.db.patch("candidates", args.candidateId, updates);
+
+    if (args.interviewStatus) {
+      await logCandidateEvent(ctx, {
+        userId: user._id,
+        candidateId: args.candidateId,
+        type: `interview_${args.interviewStatus}`,
+        metadata: updates,
+      });
+    }
+
+    return null;
+  },
+});
+
+export const cancelInterview = mutation({
+  args: {
+    candidateId: v.id("candidates"),
+    notes: v.optional(v.string()),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const user = await getCurrentUser(ctx);
+    const candidate = await ctx.db.get("candidates", args.candidateId);
+    if (!candidate || !belongsToUser(candidate, user._id)) {
+      throw new Error("Candidate not found");
+    }
+
+    const updates: {
+      interviewStatus: "cancelled";
+      interviewNotes?: string;
+    } = { interviewStatus: "cancelled" };
+
+    if (args.notes !== undefined) updates.interviewNotes = args.notes;
+
+    await ctx.db.patch("candidates", args.candidateId, updates);
+
+    await logCandidateEvent(ctx, {
+      userId: user._id,
+      candidateId: args.candidateId,
+      type: "interview_cancelled",
+      metadata: { notes: args.notes },
+    });
+
     return null;
   },
 });

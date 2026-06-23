@@ -10,6 +10,7 @@ const badgeVariants = cva(
         new: "bg-sky-100 text-sky-800",
         shortlisted: "bg-violet-100 text-violet-800",
         messaged: "bg-amber-100 text-amber-900",
+        interview_scheduled: "bg-coral-100 text-coral-800",
         interviewing: "bg-teal-100 text-teal-800",
         rejected: "bg-stone-200 text-stone-600",
         hired: "bg-emerald-100 text-emerald-800",

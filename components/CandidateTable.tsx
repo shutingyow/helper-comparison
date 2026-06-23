@@ -6,6 +6,7 @@ import { CandidateCard } from "@/components/CandidateCard";
 import { FilterBadges } from "@/components/FilterBadges";
 import { ScoreBadge } from "@/components/ScoreBadge";
 import { Badge } from "@/components/ui/badge";
+import { InterviewBadge } from "@/components/InterviewBadge";
 import { STATUS_LABELS, type Candidate } from "@/lib/types";
 import { formatDate } from "@/lib/utils";
 
@@ -150,7 +151,10 @@ export function CandidateTable({
                 </td>
               )}
               <td className="px-4 py-3">
-                <Badge variant={c.status}>{STATUS_LABELS[c.status]}</Badge>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge variant={c.status}>{STATUS_LABELS[c.status]}</Badge>
+                  <InterviewBadge candidate={c} />
+                </div>
               </td>
               <td className="px-4 py-3 text-zinc-600">{c.availableFrom ?? "—"}</td>
               <td className="px-4 py-3 text-zinc-600">

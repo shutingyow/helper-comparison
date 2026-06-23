@@ -21,6 +21,7 @@ import { PhoneBadge } from "@/components/PhoneBadge";
 import { WhatsAppComposerSingle } from "@/components/WhatsAppComposer";
 import { OutreachHistory } from "@/components/OutreachHistory";
 import { useOutreachHistory } from "@/hooks/useOutreach";
+import { InterviewScheduler } from "@/components/InterviewScheduler";
 import { useState } from "react";
 import type { Id } from "@/convex/_generated/dataModel";
 
@@ -179,6 +180,8 @@ function CandidateProfile({
           </CardContent>
         </Card>
       )}
+
+      <InterviewScheduler candidate={candidate} />
 
       {candidate.skills.length > 0 && (
         <Card>

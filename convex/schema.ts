@@ -5,9 +5,23 @@ export const candidateStatus = v.union(
   v.literal("new"),
   v.literal("shortlisted"),
   v.literal("messaged"),
+  v.literal("interview_scheduled"),
   v.literal("interviewing"),
   v.literal("rejected"),
   v.literal("hired"),
+);
+
+export const interviewType = v.union(
+  v.literal("phone"),
+  v.literal("video"),
+  v.literal("in_person"),
+);
+
+export const interviewStatus = v.union(
+  v.literal("scheduled"),
+  v.literal("completed"),
+  v.literal("no_show"),
+  v.literal("cancelled"),
 );
 
 export const workHistoryEntry = v.object({
@@ -100,6 +114,11 @@ export default defineSchema({
     passesHardFilters: v.boolean(),
     filterResults: v.array(filterResult),
     messagedAt: v.optional(v.number()),
+    interviewScheduledAt: v.optional(v.number()),
+    interviewType: v.optional(interviewType),
+    interviewLocationOrLink: v.optional(v.string()),
+    interviewStatus: v.optional(interviewStatus),
+    interviewNotes: v.optional(v.string()),
     firstSeenAt: v.number(),
     lastSeenAt: v.number(),
   })
@@ -109,7 +128,19 @@ export default defineSchema({
     .index("by_score", ["score"])
     .index("by_status", ["status"])
     .index("by_first_seen", ["firstSeenAt"])
-    .index("by_passes_filters", ["passesHardFilters"]),
+    .index("by_passes_filters", ["passesHardFilters"])
+    .index("by_user_and_interview_scheduled", ["userId", "interviewScheduledAt"]),
+
+  candidateEvents: defineTable({
+    userId: v.id("users"),
+    candidateId: v.id("candidates"),
+    type: v.string(),
+    metadata: v.optional(v.any()),
+    createdAt: v.number(),
+  })
+    .index("by_candidate", ["candidateId"])
+    .index("by_user", ["userId"])
+    .index("by_candidate_created", ["candidateId", "createdAt"]),
 
   scrapeRuns: defineTable({
     userId: v.optional(v.id("users")),

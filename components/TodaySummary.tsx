@@ -1,16 +1,19 @@
+import Link from "next/link";
 import { ScoreBadge } from "@/components/ScoreBadge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { Candidate, TodaySummary } from "@/lib/types";
-import { formatDate, formatRelativeDate } from "@/lib/utils";
+import { INTERVIEW_TYPE_LABELS } from "@/lib/types";
+import { formatDate, formatInterviewWhen, formatRelativeDate } from "@/lib/utils";
 
 type TodaySummaryProps =
-  | { summary: TodaySummary }
+  | { summary: TodaySummary; upcomingInterviews?: Candidate[] }
   | {
       lastScrapeAt?: number;
       newCount: number;
       updatedCount: number;
       topCandidates: Candidate[];
       newCandidates: Candidate[];
+      upcomingInterviews?: Candidate[];
     };
 
 export function TodaySummary(props: TodaySummaryProps) {
@@ -22,6 +25,7 @@ export function TodaySummary(props: TodaySummaryProps) {
           updatedCount: 0,
           newCandidates: props.summary.newSinceLastScrape,
           topCandidates: props.summary.topByScore,
+          upcomingInterviews: props.upcomingInterviews ?? [],
         }
       : props;
 
@@ -31,6 +35,7 @@ export function TodaySummary(props: TodaySummaryProps) {
     updatedCount,
     topCandidates,
     newCandidates,
+    upcomingInterviews = [],
   } = data;
 
   return (
@@ -72,6 +77,44 @@ export function TodaySummary(props: TodaySummaryProps) {
           </CardContent>
         </Card>
       </div>
+
+      <section>
+        <h2 className="mb-3 text-lg font-semibold text-zinc-900">
+          Upcoming interviews ({upcomingInterviews.length})
+        </h2>
+        {upcomingInterviews.length === 0 ? (
+          <p className="text-sm text-zinc-600">
+            No interviews scheduled in the next 7 days.
+          </p>
+        ) : (
+          <ul className="space-y-2">
+            {upcomingInterviews.map((c) => (
+              <li
+                key={c._id}
+                className="flex items-center justify-between rounded-lg border border-coral-200/60 bg-coral-50/40 px-4 py-3"
+              >
+                <div>
+                  <Link
+                    href={`/candidates/${c._id}`}
+                    className="font-medium text-coral-800 hover:underline"
+                  >
+                    {c.name}
+                  </Link>
+                  <p className="text-xs text-zinc-600">
+                    {c.interviewScheduledAt != null
+                      ? formatInterviewWhen(c.interviewScheduledAt)
+                      : "—"}
+                    {c.interviewType
+                      ? ` · ${INTERVIEW_TYPE_LABELS[c.interviewType]}`
+                      : ""}
+                  </p>
+                </div>
+                <ScoreBadge score={c.score} />
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
       <section>
         <h2 className="mb-3 text-lg font-semibold text-zinc-900">

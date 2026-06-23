@@ -4,11 +4,18 @@ import { STATUS_LABELS } from "@/lib/types";
 
 const statusVariant: Record<
   CandidateStatus,
-  "new" | "shortlisted" | "messaged" | "interviewing" | "rejected" | "hired"
+  | "new"
+  | "shortlisted"
+  | "messaged"
+  | "interview_scheduled"
+  | "interviewing"
+  | "rejected"
+  | "hired"
 > = {
   new: "new",
   shortlisted: "shortlisted",
   messaged: "messaged",
+  interview_scheduled: "interview_scheduled",
   interviewing: "interviewing",
   rejected: "rejected",
   hired: "hired",

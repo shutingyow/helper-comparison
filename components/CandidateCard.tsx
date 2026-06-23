@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { StatusBadge } from "@/components/StatusBadge";
+import { InterviewBadge } from "@/components/InterviewBadge";
 import { ScoreBadge } from "@/components/ScoreBadge";
 import { FilterBadges } from "@/components/FilterBadges";
 import type { Candidate } from "@/lib/types";
@@ -62,6 +63,7 @@ export function CandidateCard({
           </div>
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <StatusBadge status={candidate.status} />
+            <InterviewBadge candidate={candidate} />
             {!compact && candidate.availableFrom && (
               <span className="text-xs text-stone-500">
                 From {candidate.availableFrom}
