@@ -7,6 +7,7 @@ export function getIngestEndpoints(): {
   ingestUrl: string;
   knownIdsUrl: string;
   missingPhoneIdsUrl: string;
+  scraperConfigUrl: string;
 } {
   const raw = (process.env.INGEST_URL ?? DEFAULT_INGEST_URL).trim();
   let origin: string;
@@ -19,7 +20,20 @@ export function getIngestEndpoints(): {
     ingestUrl: `${origin}/api/ingest`,
     knownIdsUrl: `${origin}/api/ingest/known-ids`,
     missingPhoneIdsUrl: `${origin}/api/ingest/missing-phone-ids`,
+    scraperConfigUrl: `${origin}/api/scraper/config`,
   };
+}
+
+function getScrapeUserId(): string | undefined {
+  return process.env.SCRAPE_USER_ID?.trim() || undefined;
+}
+
+function withUserId(url: string): string {
+  const userId = getScrapeUserId();
+  if (!userId) return url;
+  const parsed = new URL(url);
+  parsed.searchParams.set("userId", userId);
+  return parsed.toString();
 }
 
 async function readJsonResponse<T>(response: Response, context: string): Promise<T> {
@@ -55,7 +69,7 @@ export async function fetchKnownHelperPlaceIds(): Promise<Set<string>> {
   console.log(`Fetching known candidate IDs from ${knownIdsUrl} ...`);
 
   try {
-    const response = await fetch(knownIdsUrl, {
+    const response = await fetch(withUserId(knownIdsUrl), {
       headers: { "x-ingest-secret": secret },
     });
 
@@ -92,7 +106,7 @@ export async function fetchMissingPhoneHelperPlaceIds(): Promise<Set<string>> {
   console.log(`Fetching candidates missing phone from ${missingPhoneIdsUrl} ...`);
 
   try {
-    const response = await fetch(missingPhoneIdsUrl, {
+    const response = await fetch(withUserId(missingPhoneIdsUrl), {
       headers: { "x-ingest-secret": secret },
     });
 
@@ -127,13 +141,18 @@ export async function ingestCandidates(payload: IngestPayload): Promise<IngestRe
 
   console.log(`Posting ${payload.candidates.length} candidate(s) to ${ingestUrl} ...`);
 
+  const body: IngestPayload = {
+    ...(getScrapeUserId() ? { userId: getScrapeUserId() } : {}),
+    ...payload,
+  };
+
   const response = await fetch(ingestUrl, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       "x-ingest-secret": secret,
     },
-    body: JSON.stringify(payload),
+    body: JSON.stringify(body),
   });
 
   if (!response.ok) {

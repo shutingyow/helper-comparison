@@ -1,5 +1,6 @@
 import { internalMutation } from "./_generated/server";
 import { v } from "convex/values";
+import type { Id } from "./_generated/dataModel";
 import { candidateIngestValidator } from "./lib/candidateFields";
 import {
   DEFAULT_DESIRED_SKILLS,
@@ -19,18 +20,19 @@ const scrapeRunInput = v.object({
   errors: v.optional(v.array(v.string())),
 });
 
-async function getOrCreatePreferences(ctx: {
-  db: import("./_generated/server").MutationCtx["db"];
-}) {
+async function getOrCreatePreferences(
+  ctx: { db: import("./_generated/server").MutationCtx["db"] },
+  userId: Id<"users">,
+) {
   const existing = await ctx.db
     .query("preferences")
-    .withIndex("by_singleton", (q) => q.eq("singleton", true))
+    .withIndex("by_user", (q) => q.eq("userId", userId))
     .unique();
 
   if (existing) return existing;
 
   const id = await ctx.db.insert("preferences", {
-    singleton: true,
+    userId,
     hardFilters: DEFAULT_HARD_FILTERS,
     rankingWeights: DEFAULT_RANKING_WEIGHTS,
     desiredSkills: DEFAULT_DESIRED_SKILLS,
@@ -44,6 +46,7 @@ async function getOrCreatePreferences(ctx: {
 
 export const batch = internalMutation({
   args: {
+    userId: v.id("users"),
     candidates: v.array(candidateIngestValidator),
     scrapeRun: scrapeRunInput,
   },
@@ -53,7 +56,7 @@ export const batch = internalMutation({
     scrapeRunId: v.id("scrapeRuns"),
   }),
   handler: async (ctx, args) => {
-    const prefs = await getOrCreatePreferences(ctx);
+    const prefs = await getOrCreatePreferences(ctx, args.userId);
     const now = Date.now();
     let newCount = 0;
     let updatedCount = 0;
@@ -105,12 +108,13 @@ export const batch = internalMutation({
 
       const existing = await ctx.db
         .query("candidates")
-        .withIndex("by_helper_place_id", (q) =>
-          q.eq("helperPlaceId", raw.helperPlaceId),
+        .withIndex("by_user_and_helper_place_id", (q) =>
+          q.eq("userId", args.userId).eq("helperPlaceId", raw.helperPlaceId),
         )
         .unique();
 
       const fields = {
+        userId: args.userId,
         helperPlaceId: raw.helperPlaceId,
         profileUrl: raw.profileUrl,
         name: raw.name,
@@ -158,12 +162,24 @@ export const batch = internalMutation({
     }
 
     const scrapeRunId = await ctx.db.insert("scrapeRuns", {
+      userId: args.userId,
       startedAt: args.scrapeRun.startedAt,
       finishedAt: args.scrapeRun.finishedAt,
       newCount,
       updatedCount,
       errors: args.scrapeRun.errors ?? [],
     });
+
+    const creds = await ctx.db
+      .query("scraperCredentials")
+      .withIndex("by_user", (q) => q.eq("userId", args.userId))
+      .unique();
+    if (creds) {
+      await ctx.db.patch("scraperCredentials", creds._id, {
+        lastScrapeAt: args.scrapeRun.finishedAt,
+        updatedAt: now,
+      });
+    }
 
     return { newCount, updatedCount, scrapeRunId };
   },

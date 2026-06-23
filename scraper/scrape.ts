@@ -7,6 +7,7 @@ import { chromium } from "playwright";
 import { assertEmployerLoggedIn, login } from "./lib/auth.js";
 import { collectApplicantProfileUrls, resolveApplicantsPage } from "./lib/applicants.js";
 import { fetchKnownHelperPlaceIds, fetchMissingPhoneHelperPlaceIds, ingestCandidates } from "./lib/ingest.js";
+import { resolveScraperCredentials } from "./lib/credentials.js";
 import { parseProfilesWithRateLimit } from "./parsers/profile.js";
 import { extractHelperPlaceId } from "./lib/utils.js";
 import type { IngestPayload, ScrapeRun } from "./types.js";
@@ -21,15 +22,13 @@ const PROFILE_DELAY_MS = 1_500;
 async function main(): Promise<void> {
   const dryRun = process.argv.includes("--dry-run");
   const fullScrape = process.argv.includes("--full");
-  const email = process.env.HELPERPLACE_EMAIL;
-  const password = process.env.HELPERPLACE_PASSWORD;
-  const applicantsUrl =
-    process.env.HELPERPLACE_APPLICANTS_URL?.trim() ||
-    process.env.HELPERPLACE_JOB_URL?.trim() ||
-    undefined;
+  const credentials = await resolveScraperCredentials();
+  const email = credentials.email;
+  const password = credentials.password;
+  const applicantsUrl = credentials.applicantsUrl;
 
   if (!email || !password) {
-    console.error("Missing HELPERPLACE_EMAIL or HELPERPLACE_PASSWORD in environment.");
+    console.error("Missing HelperPlace credentials.");
     process.exit(1);
   }
 

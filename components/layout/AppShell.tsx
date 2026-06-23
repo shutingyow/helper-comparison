@@ -2,15 +2,18 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { SignOutButton } from "@clerk/nextjs";
 import {
   Inbox,
   CalendarDays,
   Ban,
   MessageCircle,
   Settings,
+  KeyRound,
   Home,
   Menu,
   X,
+  LogOut,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -21,6 +24,7 @@ const navItems = [
   { href: "/excluded", label: "Excluded", icon: Ban },
   { href: "/outreach", label: "Outreach", icon: MessageCircle },
   { href: "/preferences", label: "Preferences", icon: Settings },
+  { href: "/settings", label: "HelperPlace", icon: KeyRound },
 ];
 
 export function Sidebar() {
@@ -57,6 +61,17 @@ export function Sidebar() {
           );
         })}
       </nav>
+      <div className="border-t border-stone-100 p-3">
+        <SignOutButton>
+          <button
+            type="button"
+            className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-stone-600 hover:bg-stone-50 hover:text-stone-900"
+          >
+            <LogOut className="h-4 w-4" />
+            Sign out
+          </button>
+        </SignOutButton>
+      </div>
     </aside>
   );
 }
@@ -129,6 +144,13 @@ export function MobileNav() {
 }
 
 export function AppShell({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const isAuthPage = pathname.startsWith("/sign-in") || pathname.startsWith("/login");
+
+  if (isAuthPage) {
+    return <>{children}</>;
+  }
+
   return (
     <div className="flex min-h-screen bg-warm-50">
       <Sidebar />

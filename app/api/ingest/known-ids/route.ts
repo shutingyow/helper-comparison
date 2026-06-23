@@ -1,6 +1,13 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "@/convex/_generated/api";
+import type { Id } from "@/convex/_generated/dataModel";
+
+function parseUserId(request: NextRequest): Id<"users"> | undefined {
+  const fromQuery = request.nextUrl.searchParams.get("userId");
+  const value = fromQuery ?? process.env.SCRAPE_USER_ID ?? undefined;
+  return value ? (value as Id<"users">) : undefined;
+}
 
 export async function GET(request: NextRequest) {
   const secret = request.headers.get("x-ingest-secret");
@@ -20,7 +27,7 @@ export async function GET(request: NextRequest) {
     const convex = new ConvexHttpClient(convexUrl);
     const helperPlaceIds = await convex.query(
       api.ingestPublic.listKnownHelperPlaceIds,
-      { secret },
+      { secret, userId: parseUserId(request) },
     );
     return NextResponse.json({ helperPlaceIds });
   } catch (error) {

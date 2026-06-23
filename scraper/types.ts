@@ -43,6 +43,7 @@ export interface ScrapeRun {
 }
 
 export interface IngestPayload {
+  userId?: string;
   candidates: ScrapeCandidate[];
   scrapeRun: ScrapeRun;
 }

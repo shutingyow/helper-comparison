@@ -1,5 +1,6 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
+import { getCurrentUser } from "./lib/auth";
 import {
   DEFAULT_DESIRED_SKILLS,
   DEFAULT_HARD_FILTERS,
@@ -36,7 +37,8 @@ const rankingWeightsValidator = v.object({
 const preferencesDoc = v.object({
   _id: v.id("preferences"),
   _creationTime: v.number(),
-  singleton: v.literal(true),
+  userId: v.optional(v.id("users")),
+  singleton: v.optional(v.literal(true)),
   hardFilters: hardFiltersValidator,
   rankingWeights: rankingWeightsValidator,
   desiredSkills: v.array(v.string()),
@@ -47,9 +49,10 @@ export const get = query({
   args: {},
   returns: v.union(preferencesDoc, v.null()),
   handler: async (ctx) => {
+    const user = await getCurrentUser(ctx);
     const prefs = await ctx.db
       .query("preferences")
-      .withIndex("by_singleton", (q) => q.eq("singleton", true))
+      .withIndex("by_user", (q) => q.eq("userId", user._id))
       .unique();
 
     if (!prefs) return null;
@@ -65,15 +68,16 @@ export const initialize = mutation({
   args: {},
   returns: v.id("preferences"),
   handler: async (ctx) => {
+    const user = await getCurrentUser(ctx);
     const existing = await ctx.db
       .query("preferences")
-      .withIndex("by_singleton", (q) => q.eq("singleton", true))
+      .withIndex("by_user", (q) => q.eq("userId", user._id))
       .unique();
 
     if (existing) return existing._id;
 
     return await ctx.db.insert("preferences", {
-      singleton: true,
+      userId: user._id,
       hardFilters: DEFAULT_HARD_FILTERS,
       rankingWeights: DEFAULT_RANKING_WEIGHTS,
       desiredSkills: DEFAULT_DESIRED_SKILLS,
@@ -91,15 +95,16 @@ export const update = mutation({
   },
   returns: v.id("preferences"),
   handler: async (ctx, args) => {
+    const user = await getCurrentUser(ctx);
     const existing = await ctx.db
       .query("preferences")
-      .withIndex("by_singleton", (q) => q.eq("singleton", true))
+      .withIndex("by_user", (q) => q.eq("userId", user._id))
       .unique();
 
     const prefsId =
       existing?._id ??
       (await ctx.db.insert("preferences", {
-        singleton: true,
+        userId: user._id,
         hardFilters: DEFAULT_HARD_FILTERS,
         rankingWeights: DEFAULT_RANKING_WEIGHTS,
         desiredSkills: DEFAULT_DESIRED_SKILLS,

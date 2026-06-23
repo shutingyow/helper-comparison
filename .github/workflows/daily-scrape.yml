@@ -34,9 +34,10 @@ jobs:
         env:
           INGEST_URL: ${{ secrets.INGEST_URL }}
           INGEST_SECRET: ${{ secrets.INGEST_SECRET }}
+          SCRAPE_USER_ID: ${{ secrets.SCRAPE_USER_ID }}
         run: |
           ORIGIN=$(node -e "console.log(new URL(process.env.INGEST_URL).origin)")
-          URL="${ORIGIN}/api/ingest/known-ids"
+          URL="${ORIGIN}/api/ingest/known-ids?userId=${SCRAPE_USER_ID}"
           echo "Checking ${URL}"
           STATUS=$(curl -sS -o /tmp/ingest-check.json -w "%{http_code}" \
             -H "x-ingest-secret: ${INGEST_SECRET}" \
@@ -45,7 +46,7 @@ jobs:
           head -c 300 /tmp/ingest-check.json
           echo ""
           if [ "$STATUS" != "200" ]; then
-            echo "Ingest preflight failed — check INGEST_URL origin and INGEST_SECRET on GitHub + Vercel"
+            echo "Ingest preflight failed — check INGEST_URL, INGEST_SECRET, and SCRAPE_USER_ID"
             exit 1
           fi
           if ! grep -q '"helperPlaceIds"' /tmp/ingest-check.json; then
@@ -56,11 +57,12 @@ jobs:
       - name: Run scraper
         working-directory: scraper
         env:
+          INGEST_URL: ${{ secrets.INGEST_URL }}
+          INGEST_SECRET: ${{ secrets.INGEST_SECRET }}
+          SCRAPE_USER_ID: ${{ secrets.SCRAPE_USER_ID }}
           HELPERPLACE_EMAIL: ${{ secrets.HELPERPLACE_EMAIL }}
           HELPERPLACE_PASSWORD: ${{ secrets.HELPERPLACE_PASSWORD }}
           HELPERPLACE_APPLICANTS_URL: ${{ secrets.HELPERPLACE_APPLICANTS_URL }}
-          INGEST_URL: ${{ secrets.INGEST_URL }}
-          INGEST_SECRET: ${{ secrets.INGEST_SECRET }}
         run: npm run scrape
 
       - name: Upload scrape artifact on failure

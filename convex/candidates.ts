@@ -1,6 +1,7 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { candidateStatus, filterResult, workHistoryEntry } from "./schema";
+import { getCurrentUser } from "./lib/auth";
 import {
   computeScore,
   DEFAULT_HARD_FILTERS,
@@ -15,6 +16,7 @@ import { sortWorkHistoryByRecency } from "./lib/workHistory";
 const candidateDoc = v.object({
   _id: v.id("candidates"),
   _creationTime: v.number(),
+  userId: v.optional(v.id("users")),
   helperPlaceId: v.string(),
   profileUrl: v.string(),
   name: v.string(),
@@ -52,14 +54,17 @@ const candidateDoc = v.object({
   lastSeenAt: v.number(),
 });
 
-async function getPreferences(ctx: { db: import("./_generated/server").QueryCtx["db"] }) {
+async function getPreferencesForUser(
+  ctx: { db: import("./_generated/server").QueryCtx["db"] },
+  userId: import("./_generated/dataModel").Id<"users">,
+) {
   const prefs = await ctx.db
     .query("preferences")
-    .withIndex("by_singleton", (q) => q.eq("singleton", true))
+    .withIndex("by_user", (q) => q.eq("userId", userId))
     .unique();
 
   if (!prefs) {
-    throw new Error("Preferences not initialized. Run preferences.get first.");
+    throw new Error("Preferences not initialized. Open Preferences to set up your account.");
   }
 
   return prefs;
@@ -81,7 +86,7 @@ function enrichCandidateFields(
     whatsapp?: string;
     [key: string]: unknown;
   },
-  prefs: Awaited<ReturnType<typeof getPreferences>>,
+  prefs: Awaited<ReturnType<typeof getPreferencesForUser>>,
 ) {
   const availableFromTimestamp =
     input.availableFrom !== undefined
@@ -132,6 +137,13 @@ function enrichCandidateFields(
   };
 }
 
+function belongsToUser(
+  candidate: { userId?: import("./_generated/dataModel").Id<"users"> | undefined },
+  userId: import("./_generated/dataModel").Id<"users">,
+) {
+  return !candidate.userId || candidate.userId === userId;
+}
+
 export const list = query({
   args: {
     passesHardFiltersOnly: v.optional(v.boolean()),
@@ -139,7 +151,11 @@ export const list = query({
   },
   returns: v.array(candidateDoc),
   handler: async (ctx, args) => {
-    let results = await ctx.db.query("candidates").collect();
+    const user = await getCurrentUser(ctx);
+    let results = await ctx.db
+      .query("candidates")
+      .withIndex("by_user", (q) => q.eq("userId", user._id))
+      .collect();
 
     if (args.passesHardFiltersOnly) {
       results = results.filter((c) => c.passesHardFilters);
@@ -156,7 +172,11 @@ export const listExcluded = query({
   args: {},
   returns: v.array(candidateDoc),
   handler: async (ctx) => {
-    const results = await ctx.db.query("candidates").collect();
+    const user = await getCurrentUser(ctx);
+    const results = await ctx.db
+      .query("candidates")
+      .withIndex("by_user", (q) => q.eq("userId", user._id))
+      .collect();
     return results
       .filter((c) => !c.passesHardFilters)
       .sort((a, b) => b.score - a.score);
@@ -167,7 +187,11 @@ export const listNewSince = query({
   args: { since: v.number() },
   returns: v.array(candidateDoc),
   handler: async (ctx, args) => {
-    const results = await ctx.db.query("candidates").collect();
+    const user = await getCurrentUser(ctx);
+    const results = await ctx.db
+      .query("candidates")
+      .withIndex("by_user", (q) => q.eq("userId", user._id))
+      .collect();
     return results
       .filter((c) => c.firstSeenAt >= args.since)
       .sort((a, b) => b.score - a.score);
@@ -181,6 +205,11 @@ export const updateNotes = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
+    const user = await getCurrentUser(ctx);
+    const candidate = await ctx.db.get("candidates", args.candidateId);
+    if (!candidate || !belongsToUser(candidate, user._id)) {
+      throw new Error("Candidate not found");
+    }
     await ctx.db.patch("candidates", args.candidateId, { notes: args.notes });
     return null;
   },
@@ -190,6 +219,11 @@ export const markMessaged = mutation({
   args: { candidateId: v.id("candidates") },
   returns: v.null(),
   handler: async (ctx, args) => {
+    const user = await getCurrentUser(ctx);
+    const candidate = await ctx.db.get("candidates", args.candidateId);
+    if (!candidate || !belongsToUser(candidate, user._id)) {
+      throw new Error("Candidate not found");
+    }
     await ctx.db.patch("candidates", args.candidateId, {
       status: "messaged",
       messagedAt: Date.now(),
@@ -202,7 +236,12 @@ export const get = query({
   args: { id: v.id("candidates") },
   returns: v.union(candidateDoc, v.null()),
   handler: async (ctx, args) => {
-    return await ctx.db.get("candidates", args.id);
+    const user = await getCurrentUser(ctx);
+    const candidate = await ctx.db.get("candidates", args.id);
+    if (!candidate || !belongsToUser(candidate, user._id)) {
+      return null;
+    }
+    return candidate;
   },
 });
 
@@ -215,14 +254,18 @@ export const listToday = query({
     newCount: v.number(),
   }),
   handler: async (ctx) => {
+    const user = await getCurrentUser(ctx);
     const latestRun = await ctx.db
       .query("scrapeRuns")
-      .withIndex("by_started")
+      .withIndex("by_user_and_started", (q) => q.eq("userId", user._id))
       .order("desc")
       .first();
 
     const since = latestRun?.startedAt ?? Date.now() - 24 * 60 * 60 * 1000;
-    const all = await ctx.db.query("candidates").collect();
+    const all = await ctx.db
+      .query("candidates")
+      .withIndex("by_user", (q) => q.eq("userId", user._id))
+      .collect();
 
     const newSinceLastScrape = all
       .filter((c) => c.firstSeenAt >= since)
@@ -249,7 +292,11 @@ export const listForOutreach = query({
   },
   returns: v.array(candidateDoc),
   handler: async (ctx, args) => {
-    let results = await ctx.db.query("candidates").collect();
+    const user = await getCurrentUser(ctx);
+    let results = await ctx.db
+      .query("candidates")
+      .withIndex("by_user", (q) => q.eq("userId", user._id))
+      .collect();
     results = results.filter((c) => c.passesHardFilters);
 
     if (args.includeAll) {
@@ -274,7 +321,12 @@ export const getById = query({
   args: { candidateId: v.id("candidates") },
   returns: v.union(candidateDoc, v.null()),
   handler: async (ctx, args) => {
-    return await ctx.db.get("candidates", args.candidateId);
+    const user = await getCurrentUser(ctx);
+    const candidate = await ctx.db.get("candidates", args.candidateId);
+    if (!candidate || !belongsToUser(candidate, user._id)) {
+      return null;
+    }
+    return candidate;
   },
 });
 
@@ -282,12 +334,14 @@ export const getByHelperPlaceId = query({
   args: { helperPlaceId: v.string() },
   returns: v.union(candidateDoc, v.null()),
   handler: async (ctx, args) => {
-    return await ctx.db
+    const user = await getCurrentUser(ctx);
+    const candidate = await ctx.db
       .query("candidates")
-      .withIndex("by_helper_place_id", (q) =>
-        q.eq("helperPlaceId", args.helperPlaceId),
+      .withIndex("by_user_and_helper_place_id", (q) =>
+        q.eq("userId", user._id).eq("helperPlaceId", args.helperPlaceId),
       )
       .unique();
+    return candidate ?? null;
   },
 });
 
@@ -299,8 +353,11 @@ export const updateStatus = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
+    const user = await getCurrentUser(ctx);
     const candidate = await ctx.db.get("candidates", args.candidateId);
-    if (!candidate) throw new Error("Candidate not found");
+    if (!candidate || !belongsToUser(candidate, user._id)) {
+      throw new Error("Candidate not found");
+    }
 
     const updates: {
       status: typeof args.status;
@@ -322,8 +379,12 @@ export const recalculateScores = mutation({
   args: {},
   returns: v.object({ updated: v.number() }),
   handler: async (ctx) => {
-    const prefs = await getPreferences(ctx);
-    const candidates = await ctx.db.query("candidates").collect();
+    const user = await getCurrentUser(ctx);
+    const prefs = await getPreferencesForUser(ctx, user._id);
+    const candidates = await ctx.db
+      .query("candidates")
+      .withIndex("by_user", (q) => q.eq("userId", user._id))
+      .collect();
     let updated = 0;
 
     for (const candidate of candidates) {

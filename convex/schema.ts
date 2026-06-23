@@ -25,8 +25,48 @@ export const filterResult = v.object({
   reason: v.string(),
 });
 
+const hardFiltersShape = v.object({
+  requireReferenceLetter: v.boolean(),
+  requireStartByOct2026: v.boolean(),
+  requireFinishedContractOrSingapore: v.boolean(),
+  requireEnglish: v.boolean(),
+  requireBabyChildCareInRecentWork: v.optional(v.boolean()),
+});
+
+const rankingWeightsShape = v.object({
+  perReferenceLetter: v.number(),
+  perDesiredSkill: v.number(),
+  perYearExperience: v.number(),
+  maxExperienceBonus: v.number(),
+  startDateWithinTwoWeeks: v.number(),
+  finishedContractSingaporeBonus: v.number(),
+  profileCompleteness: v.number(),
+});
+
 export default defineSchema({
+  users: defineTable({
+    tokenIdentifier: v.string(),
+    name: v.string(),
+    email: v.string(),
+    pictureUrl: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.optional(v.number()),
+  })
+    .index("by_token", ["tokenIdentifier"])
+    .index("by_email", ["email"]),
+
+  scraperCredentials: defineTable({
+    userId: v.id("users"),
+    helperPlaceEmail: v.string(),
+    encryptedPassword: v.string(),
+    applicantsUrl: v.string(),
+    lastScrapeAt: v.optional(v.number()),
+    scrapeEnabled: v.boolean(),
+    updatedAt: v.number(),
+  }).index("by_user", ["userId"]),
+
   candidates: defineTable({
+    userId: v.optional(v.id("users")),
     helperPlaceId: v.string(),
     profileUrl: v.string(),
     name: v.string(),
@@ -64,20 +104,26 @@ export default defineSchema({
     lastSeenAt: v.number(),
   })
     .index("by_helper_place_id", ["helperPlaceId"])
+    .index("by_user", ["userId"])
+    .index("by_user_and_helper_place_id", ["userId", "helperPlaceId"])
     .index("by_score", ["score"])
     .index("by_status", ["status"])
     .index("by_first_seen", ["firstSeenAt"])
     .index("by_passes_filters", ["passesHardFilters"]),
 
   scrapeRuns: defineTable({
+    userId: v.optional(v.id("users")),
     startedAt: v.number(),
     finishedAt: v.number(),
     newCount: v.number(),
     updatedCount: v.number(),
     errors: v.array(v.string()),
-  }).index("by_started", ["startedAt"]),
+  })
+    .index("by_started", ["startedAt"])
+    .index("by_user_and_started", ["userId", "startedAt"]),
 
   outreachMessages: defineTable({
+    userId: v.optional(v.id("users")),
     candidateId: v.id("candidates"),
     templateKey: v.string(),
     renderedText: v.string(),
@@ -93,27 +139,17 @@ export default defineSchema({
     repliedAt: v.optional(v.number()),
   })
     .index("by_candidate", ["candidateId"])
-    .index("by_candidate_opened", ["candidateId", "openedAt"]),
+    .index("by_candidate_opened", ["candidateId", "openedAt"])
+    .index("by_user", ["userId"]),
 
   preferences: defineTable({
-    singleton: v.literal(true),
-    hardFilters: v.object({
-      requireReferenceLetter: v.boolean(),
-      requireStartByOct2026: v.boolean(),
-      requireFinishedContractOrSingapore: v.boolean(),
-      requireEnglish: v.boolean(),
-      requireBabyChildCareInRecentWork: v.optional(v.boolean()),
-    }),
-    rankingWeights: v.object({
-      perReferenceLetter: v.number(),
-      perDesiredSkill: v.number(),
-      perYearExperience: v.number(),
-      maxExperienceBonus: v.number(),
-      startDateWithinTwoWeeks: v.number(),
-      finishedContractSingaporeBonus: v.number(),
-      profileCompleteness: v.number(),
-    }),
+    userId: v.optional(v.id("users")),
+    singleton: v.optional(v.literal(true)),
+    hardFilters: hardFiltersShape,
+    rankingWeights: rankingWeightsShape,
     desiredSkills: v.array(v.string()),
     targetStartDate: v.string(),
-  }).index("by_singleton", ["singleton"]),
+  })
+    .index("by_singleton", ["singleton"])
+    .index("by_user", ["userId"]),
 });
