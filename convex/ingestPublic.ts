@@ -94,13 +94,18 @@ export const listKnownHelperPlaceIds = query({
   },
 });
 
+const missingPhoneCandidateValidator = v.object({
+  helperPlaceId: v.string(),
+  profileUrl: v.string(),
+});
+
 /** Used by the scraper to backfill phone numbers on incremental runs. */
 export const listMissingPhoneHelperPlaceIds = query({
   args: {
     secret: v.string(),
     userId: v.optional(v.id("users")),
   },
-  returns: v.array(v.string()),
+  returns: v.array(missingPhoneCandidateValidator),
   handler: async (ctx, args) => {
     assertIngestSecret(args.secret);
     const userId = await resolveIngestUserId(ctx, args.userId);
@@ -109,6 +114,11 @@ export const listMissingPhoneHelperPlaceIds = query({
       .query("candidates")
       .withIndex("by_user", (q) => q.eq("userId", userId))
       .collect();
-    return candidates.filter((c) => !c.phone).map((c) => c.helperPlaceId);
+    return candidates
+      .filter((c) => !c.phone)
+      .map((c) => ({
+        helperPlaceId: c.helperPlaceId,
+        profileUrl: c.profileUrl,
+      }));
   },
 });

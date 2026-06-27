@@ -25,11 +25,14 @@ export async function GET(request: NextRequest) {
 
   try {
     const convex = new ConvexHttpClient(convexUrl);
-    const helperPlaceIds = await convex.query(
+    const candidates = await convex.query(
       api.ingestPublic.listMissingPhoneHelperPlaceIds,
       { secret, userId: parseUserId(request) },
     );
-    return NextResponse.json({ helperPlaceIds });
+    return NextResponse.json({
+      candidates,
+      helperPlaceIds: candidates.map((c) => c.helperPlaceId),
+    });
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Failed to list missing-phone IDs";

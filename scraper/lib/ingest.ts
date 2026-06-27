@@ -96,10 +96,15 @@ export async function fetchKnownHelperPlaceIds(): Promise<Set<string>> {
   }
 }
 
-export async function fetchMissingPhoneHelperPlaceIds(): Promise<Set<string>> {
+export interface MissingPhoneCandidate {
+  helperPlaceId: string;
+  profileUrl: string;
+}
+
+export async function fetchMissingPhoneCandidates(): Promise<MissingPhoneCandidate[]> {
   const secret = process.env.INGEST_SECRET;
   if (!secret) {
-    return new Set();
+    return [];
   }
 
   const { missingPhoneIdsUrl } = getIngestEndpoints();
@@ -114,20 +119,29 @@ export async function fetchMissingPhoneHelperPlaceIds(): Promise<Set<string>> {
       console.warn(
         `Could not fetch missing-phone IDs (HTTP ${response.status}) — skipping phone backfill.`,
       );
-      return new Set();
+      return [];
     }
 
-    const body = await readJsonResponse<{ helperPlaceIds?: string[] }>(
-      response,
-      "missing-phone-ids",
-    );
-    const ids = new Set(body.helperPlaceIds ?? []);
-    console.log(`Found ${ids.size} candidate(s) missing phone numbers.`);
-    return ids;
+    const body = await readJsonResponse<{
+      candidates?: MissingPhoneCandidate[];
+      helperPlaceIds?: string[];
+    }>(response, "missing-phone-ids");
+
+    if (body.candidates?.length) {
+      console.log(`Found ${body.candidates.length} candidate(s) missing phone numbers.`);
+      return body.candidates;
+    }
+
+    const legacyIds = body.helperPlaceIds ?? [];
+    console.log(`Found ${legacyIds.length} candidate(s) missing phone numbers.`);
+    return legacyIds.map((helperPlaceId) => ({
+      helperPlaceId,
+      profileUrl: `https://www.helperplace.com/resume/singapore/domestic-helper/${helperPlaceId}`,
+    }));
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     console.warn(`${message} — skipping phone backfill.`);
-    return new Set();
+    return [];
   }
 }
 

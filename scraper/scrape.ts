@@ -6,10 +6,10 @@ import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
 import { assertEmployerLoggedIn, login } from "./lib/auth.js";
 import { collectApplicantProfileUrls, resolveApplicantsPage } from "./lib/applicants.js";
-import { fetchKnownHelperPlaceIds, fetchMissingPhoneHelperPlaceIds, ingestCandidates } from "./lib/ingest.js";
+import { fetchKnownHelperPlaceIds, fetchMissingPhoneCandidates, ingestCandidates } from "./lib/ingest.js";
 import { resolveScraperCredentials } from "./lib/credentials.js";
 import { parseProfilesWithRateLimit } from "./parsers/profile.js";
-import { extractHelperPlaceId } from "./lib/utils.js";
+import { extractHelperPlaceId, normalizeProfileUrl } from "./lib/utils.js";
 import type { IngestPayload, ScrapeRun } from "./types.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -61,17 +61,35 @@ async function main(): Promise<void> {
     let urlsToParse = profileUrls;
     if (!fullScrape && !dryRun) {
       const knownIds = await fetchKnownHelperPlaceIds();
-      const missingPhoneIds = await fetchMissingPhoneHelperPlaceIds();
-      urlsToParse = profileUrls.filter((url) => {
+      const missingPhoneCandidates = await fetchMissingPhoneCandidates();
+      const missingPhoneIds = new Set(
+        missingPhoneCandidates.map((candidate) => candidate.helperPlaceId),
+      );
+
+      const urlSet = new Set<string>();
+      for (const url of profileUrls) {
         const id = extractHelperPlaceId(url);
-        return !knownIds.has(id) || missingPhoneIds.has(id);
-      });
+        if (!knownIds.has(id) || missingPhoneIds.has(id)) {
+          urlSet.add(normalizeProfileUrl(url));
+        }
+      }
+
+      let directBackfillCount = 0;
+      for (const candidate of missingPhoneCandidates) {
+        const normalized = normalizeProfileUrl(candidate.profileUrl);
+        if (!urlSet.has(normalized)) {
+          urlSet.add(normalized);
+          directBackfillCount += 1;
+        }
+      }
+
+      urlsToParse = [...urlSet];
       const newCount = profileUrls.filter(
         (url) => !knownIds.has(extractHelperPlaceId(url)),
       ).length;
       const backfillCount = urlsToParse.length - newCount;
       console.log(
-        `${urlsToParse.length} profile(s) to parse (${newCount} new, ${backfillCount} phone backfill, ${knownIds.size} already in dashboard).`,
+        `${urlsToParse.length} profile(s) to parse (${newCount} new, ${backfillCount} phone backfill including ${directBackfillCount} direct from dashboard, ${knownIds.size} already in dashboard).`,
       );
     } else if (fullScrape) {
       console.log("Full scrape: parsing all profiles (updates existing records too).");

@@ -149,7 +149,11 @@ export const batch = internalMutation({
       };
 
       if (existing) {
-        await ctx.db.patch("candidates", existing._id, fields);
+        await ctx.db.patch("candidates", existing._id, {
+          ...fields,
+          phone: phone ?? existing.phone,
+          whatsapp: whatsapp ?? existing.whatsapp,
+        });
         updatedCount += 1;
       } else {
         await ctx.db.insert("candidates", {
