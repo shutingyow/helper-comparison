@@ -76,7 +76,8 @@ export async function parseProfilePage(
   const bodyText = bodyLines.join("\n");
   const contactText = [aboutMe ?? "", bodyText].join("\n");
   const phone =
-    extractSingaporePhone(contactText) ?? (await extractContactFromButton(page));
+    extractSingaporePhone(contactText) ??
+    (await extractContactFromButton(page, { profileUrl: url, helperPlaceId }));
   const whatsapp = phone;
 
   const candidate: ScrapeCandidate = {
@@ -158,33 +159,108 @@ function extractLabeledValue(text: string, pattern: RegExp): string | undefined 
   return match?.[1]?.trim();
 }
 
-async function extractContactFromButton(page: Page): Promise<string | undefined> {
+const CONTACT_BUTTON_SELECTORS = [
+  "button.contact",
+  "button.hp-apply-btn.contact",
+  ".btn.hp-apply-btn.contact",
+];
+
+const CALL_WHATSAPP_SELECTORS = [
+  ".contact-btn",
+  'div.contact-btn:has-text("Call/Whatsapp")',
+  'span.tab-font:has-text("Call/Whatsapp")',
+  'a:has-text("Call/Whatsapp")',
+  'button:has-text("Call/Whatsapp")',
+  'a:has-text("Call/ WhatsApp")',
+  'button:has-text("Call/ WhatsApp")',
+  'a:has-text("Call")',
+  'button:has-text("Call")',
+  'a:has-text("WhatsApp")',
+  'button:has-text("WhatsApp")',
+];
+
+const CALL_WHATSAPP_LABELS = [
+  "Call/Whatsapp",
+  "Call/ WhatsApp",
+  "Call",
+  "WhatsApp",
+  "Phone",
+];
+
+async function extractContactFromButton(
+  page: Page,
+  context?: { profileUrl?: string; helperPlaceId?: string },
+): Promise<string | undefined> {
+  const logCtx = context?.helperPlaceId ?? context?.profileUrl ?? "unknown profile";
+
   const direct = await extractVisiblePhoneFromPage(page);
   if (direct) return direct;
 
   try {
     await dismissOverlays(page);
 
-    const contactBtn = page.locator("button.contact, .btn.hp-apply-btn.contact").first();
-    if (!(await contactBtn.isVisible({ timeout: 2_000 }).catch(() => false))) {
+    let contactBtn = page.locator(CONTACT_BUTTON_SELECTORS[0]!).first();
+    let contactFound = false;
+    for (const selector of CONTACT_BUTTON_SELECTORS) {
+      const el = page.locator(selector).first();
+      if (await el.isVisible({ timeout: 500 }).catch(() => false)) {
+        contactBtn = el;
+        contactFound = true;
+        break;
+      }
+    }
+    if (
+      !contactFound &&
+      !(await contactBtn.isVisible({ timeout: 3_000 }).catch(() => false))
+    ) {
+      console.warn(`[contact] No contact button found for ${logCtx}`);
       return undefined;
     }
 
     await contactBtn.click({ force: true });
-    await page.waitForTimeout(1_000);
+    await page.waitForTimeout(1_500);
 
-    const callTab = page.locator(".contact-btn").first();
-    if (!(await callTab.isVisible({ timeout: 2_000 }).catch(() => false))) {
+    let clicked = await clickCallWhatsAppTab(page);
+    if (!clicked) {
+      await page.waitForTimeout(1_000);
+      clicked = await clickCallWhatsAppTab(page);
+    }
+    if (!clicked) {
+      console.warn(`[contact] Call/WhatsApp tab not found for ${logCtx}`);
       return undefined;
     }
 
-    await callTab.click({ force: true });
-    await page.waitForTimeout(1_000);
-
     return await extractVisiblePhoneFromPage(page);
-  } catch {
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.warn(`[contact] Extraction failed for ${logCtx}: ${message}`);
     return undefined;
   }
+}
+
+async function clickCallWhatsAppTab(page: Page): Promise<boolean> {
+  for (const selector of CALL_WHATSAPP_SELECTORS) {
+    const opt = page.locator(selector).first();
+    if (await opt.isVisible({ timeout: 500 }).catch(() => false)) {
+      await opt.click({ force: true });
+      await page.waitForTimeout(1_500);
+      return true;
+    }
+  }
+
+  for (const label of CALL_WHATSAPP_LABELS) {
+    const opt = page
+      .locator("a, button, [role='button'], mat-list-item, .mat-menu-item")
+      .filter({ hasText: new RegExp(label.replace("/", "\\/"), "i") })
+      .first();
+    if (await opt.isVisible({ timeout: 500 }).catch(() => false)) {
+      await opt.click({ force: true });
+      await page.waitForTimeout(1_500);
+      return true;
+    }
+  }
+
+  return false;
 }
 
 async function extractVisiblePhoneFromPage(page: Page): Promise<string | undefined> {
@@ -246,6 +322,11 @@ export async function parseProfilesWithRateLimit(
           `${candidate.referenceLetterCount} ref letter(s)` +
           (candidate.phone ? `, phone ${candidate.phone}` : ", no phone"),
       );
+      if (!candidate.phone) {
+        console.warn(
+          `[contact] No phone extracted for ${candidate.name} (${candidate.helperPlaceId}) — ${profileUrl}`,
+        );
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       errors.push(`${profileUrl}: ${message}`);
