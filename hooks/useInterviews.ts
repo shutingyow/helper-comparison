@@ -1,12 +1,14 @@
 "use client";
 
+import { useMemo } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { InterviewStatus, InterviewType } from "@/lib/types";
 import type { Id } from "@/convex/_generated/dataModel";
 
 export function useUpcomingInterviews() {
-  return useQuery(api.candidates.listUpcomingInterviews, { now: Date.now() });
+  const now = useMemo(() => Date.now(), []);
+  return useQuery(api.candidates.listUpcomingInterviews, { now });
 }
 
 export function useScheduleInterview() {

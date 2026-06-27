@@ -25,7 +25,8 @@ export default function TodayPage() {
       <ConvexGuard>
         {loading ? (
           <LoadingState rows={4} />
-        ) : summary.newCount === 0 &&
+        ) : !summary.lastScrapeAt &&
+          summary.newCount === 0 &&
           summary.topByScore.length === 0 &&
           upcomingInterviews.length === 0 ? (
           <EmptyState

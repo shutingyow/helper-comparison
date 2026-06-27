@@ -3,7 +3,7 @@ import type { WorkHistoryEntry } from "../types.js";
 function parseHelperPlaceDate(dateStr: string): number | undefined {
   const cleaned = dateStr.trim();
   const match = cleaned.match(
-    /(\d{1,2})\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+(\d{4})/i,
+    /(?:(\d{1,2})\s+)?(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+(\d{4})/i,
   );
   if (!match) return undefined;
   const months: Record<string, number> = {
@@ -20,7 +20,7 @@ function parseHelperPlaceDate(dateStr: string): number | undefined {
     nov: 10,
     dec: 11,
   };
-  const day = parseInt(match[1]!, 10);
+  const day = match[1] ? parseInt(match[1], 10) : 1;
   const month = months[match[2]!.toLowerCase().slice(0, 3)];
   const year = parseInt(match[3]!, 10);
   if (month === undefined) return undefined;

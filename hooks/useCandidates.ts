@@ -28,10 +28,15 @@ export function useExcludedCandidates() {
   return useQuery(api.candidates.listExcluded, {});
 }
 
-export function useNewSince(since: number | undefined) {
+export function useNewSince(
+  since: number | undefined,
+  options?: { excludeRejected?: boolean },
+) {
   return useQuery(
     api.candidates.listNewSince,
-    since !== undefined ? { since } : "skip",
+    since !== undefined
+      ? { since, excludeRejected: options?.excludeRejected }
+      : "skip",
   );
 }
 

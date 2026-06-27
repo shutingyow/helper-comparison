@@ -217,7 +217,10 @@ export const listExcluded = query({
 });
 
 export const listNewSince = query({
-  args: { since: v.number() },
+  args: {
+    since: v.number(),
+    excludeRejected: v.optional(v.boolean()),
+  },
   returns: v.array(candidateDoc),
   handler: async (ctx, args) => {
     const user = await getCurrentUser(ctx);
@@ -226,7 +229,11 @@ export const listNewSince = query({
       .withIndex("by_user", (q) => q.eq("userId", user._id))
       .collect();
     return results
-      .filter((c) => c.firstSeenAt >= args.since)
+      .filter(
+        (c) =>
+          c.firstSeenAt >= args.since &&
+          (!args.excludeRejected || c.status !== "rejected"),
+      )
       .sort((a, b) => b.score - a.score);
   },
 });
