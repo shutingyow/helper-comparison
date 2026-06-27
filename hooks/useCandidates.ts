@@ -8,8 +8,13 @@ import type { Id } from "@/convex/_generated/dataModel";
 export function useCandidateList(args?: {
   status?: CandidateStatus;
   passesHardFiltersOnly?: boolean;
+  excludeRejected?: boolean;
 }) {
   return useQuery(api.candidates.list, args ?? {});
+}
+
+export function useInboxCandidates() {
+  return useQuery(api.candidates.list, { excludeRejected: true });
 }
 
 export function useCandidate(candidateId: Id<"candidates"> | undefined) {

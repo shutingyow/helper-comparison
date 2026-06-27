@@ -177,6 +177,7 @@ export const list = query({
   args: {
     passesHardFiltersOnly: v.optional(v.boolean()),
     status: v.optional(candidateStatus),
+    excludeRejected: v.optional(v.boolean()),
   },
   returns: v.array(candidateDoc),
   handler: async (ctx, args) => {
@@ -188,6 +189,9 @@ export const list = query({
 
     if (args.passesHardFiltersOnly) {
       results = results.filter((c) => c.passesHardFilters);
+    }
+    if (args.excludeRejected) {
+      results = results.filter((c) => c.status !== "rejected");
     }
     if (args.status) {
       results = results.filter((c) => c.status === args.status);

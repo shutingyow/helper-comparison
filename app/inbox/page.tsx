@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { Search, X } from "lucide-react";
-import { useCandidateList } from "@/hooks/useCandidates";
+import { useInboxCandidates } from "@/hooks/useCandidates";
 import { CandidateTable } from "@/components/CandidateTable";
 import { EmptyState } from "@/components/EmptyState";
 import { LoadingState } from "@/components/LoadingState";
@@ -17,7 +17,7 @@ function matchesNameSearch(name: string, query: string): boolean {
 }
 
 export default function InboxPage() {
-  const candidates = useCandidateList();
+  const candidates = useInboxCandidates();
   const [searchQuery, setSearchQuery] = useState("");
 
   const filteredCandidates = useMemo(() => {
