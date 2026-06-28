@@ -10,6 +10,7 @@ import { fetchKnownHelperPlaceIds, fetchMissingPhoneCandidates, ingestCandidates
 import { fetchScrapeTargets, resolveScraperCredentials } from "./lib/credentials.js";
 import { parseProfilesWithRateLimit } from "./parsers/profile.js";
 import { extractHelperPlaceId, normalizeProfileUrl } from "./lib/utils.js";
+import { resolveEmployerApplicantsUrl } from "./lib/urls.js";
 import type { IngestPayload, ScrapeRun } from "./types.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -18,6 +19,13 @@ config({ path: path.join(__dirname, ".env") });
 config({ path: path.join(__dirname, "..", ".env") });
 
 const PROFILE_DELAY_MS = 1_500;
+
+function maskEmail(email: string): string {
+  const [local, domain] = email.split("@");
+  if (!local || !domain) return "***";
+  const visible = local.length <= 2 ? local[0] ?? "*" : `${local.slice(0, 2)}***`;
+  return `${visible}@${domain}`;
+}
 
 function parseUserIdArg(): string | undefined {
   const flag = process.argv.find((arg) => arg.startsWith("--user-id="));
@@ -40,11 +48,21 @@ async function runScrapeOnce(options: {
 
   const email = credentials.email;
   const password = credentials.password;
-  const applicantsUrl = credentials.applicantsUrl;
+  const applicantsUrl = resolveEmployerApplicantsUrl(credentials.applicantsUrl);
+  const userLabel = credentials.userId ?? options.userId ?? "local-env";
 
   if (!email || !password) {
     console.error("Missing HelperPlace credentials.");
     process.exit(1);
+  }
+
+  if (
+    credentials.applicantsUrl?.trim() &&
+    credentials.applicantsUrl.trim() !== applicantsUrl
+  ) {
+    console.warn(
+      `User ${userLabel} (${maskEmail(email)}): applicants URL was adjusted from browse catalog to ${applicantsUrl}`,
+    );
   }
 
   const startedAt = Date.now();
@@ -60,7 +78,9 @@ async function runScrapeOnce(options: {
   const page = await context.newPage();
 
   try {
-    console.log("Logging in to HelperPlace...");
+    console.log(
+      `Logging in to HelperPlace as ${maskEmail(email)} (user ${userLabel})...`,
+    );
     await login(page, email, password, { afterLoginUrl: applicantsUrl });
     await assertEmployerLoggedIn(page, applicantsUrl);
     console.log("Logged in as employer.");
@@ -193,6 +213,8 @@ async function main(): Promise<void> {
 }
 
 main().catch((error) => {
-  console.error(error instanceof Error ? error.message : error);
+  const userId = process.env.SCRAPE_USER_ID?.trim();
+  const prefix = userId ? `[user ${userId}] ` : "";
+  console.error(`${prefix}${error instanceof Error ? error.message : error}`);
   process.exit(1);
 });

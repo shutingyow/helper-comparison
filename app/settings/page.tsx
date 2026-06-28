@@ -146,7 +146,11 @@ export default function SettingsPage() {
                   />
                   <p className="mt-1 text-xs text-stone-500">
                     Open your job&apos;s applicants list in HelperPlace while logged in, then copy
-                    the URL from your browser.
+                    the URL from your browser. The path must include{" "}
+                    <code className="text-stone-600">/applicant</code> (for example{" "}
+                    <code className="text-stone-600">/find-candidate-singapore/applicant</code>), not
+                    the public browse catalog (<code className="text-stone-600">/find-candidate</code>
+                    ).
                   </p>
                 </div>
 

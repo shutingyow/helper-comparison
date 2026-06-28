@@ -17,6 +17,22 @@ const credentialsPublic = v.object({
 const HELPERPLACE_APPLICANTS_PATTERN =
   /^https:\/\/(www\.)?helperplace\.com\/.+/i;
 
+function isBrowseCatalogPath(pathname: string): boolean {
+  const path = pathname.toLowerCase().replace(/\/$/, "") || "/";
+  if (
+    path.includes("/applicant") ||
+    path.includes("/application") ||
+    path.includes("/applications")
+  ) {
+    return false;
+  }
+  return (
+    path === "/find-candidate" ||
+    path === "/find-candidate-singapore" ||
+    /^\/find-candidate-[^/]+$/.test(path)
+  );
+}
+
 function validateApplicantsUrl(url: string): void {
   let parsed: URL;
   try {
@@ -29,6 +45,12 @@ function validateApplicantsUrl(url: string): void {
   }
   if (!HELPERPLACE_APPLICANTS_PATTERN.test(url)) {
     throw new Error("Applicants URL must be a HelperPlace page URL");
+  }
+  if (isBrowseCatalogPath(parsed.pathname)) {
+    throw new Error(
+      "Applicants URL must be your job applicants list (path should include /applicant), " +
+        "not the public candidate catalog (e.g. /find-candidate).",
+    );
   }
 }
 

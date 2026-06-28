@@ -1,12 +1,16 @@
 import type { Locator, Page } from "playwright";
 import { assertEmployerLoggedIn, isEmployerLoggedIn } from "./auth.js";
 import { delay, normalizeProfileUrl } from "./utils.js";
+import {
+  DEFAULT_APPLICANTS_URL,
+  isApplicantsListUrl,
+  isBrowseCatalogUrl,
+  resolveEmployerApplicantsUrl,
+} from "./urls.js";
 
 const BASE_URL = "https://www.helperplace.com";
 
-/** Default employer applicants list (Singapore) — must be logged in as employer */
-export const DEFAULT_APPLICANTS_URL =
-  "https://www.helperplace.com/find-candidate-singapore/applicant";
+export { DEFAULT_APPLICANTS_URL, isApplicantsListUrl, isBrowseCatalogUrl };
 
 export const APPLIED_MARKER =
   /Applied\s+\d+\s*(?:sec(?:ond)?s?|min(?:ute)?s?|hours?|hrs?|days?|weeks?|months?)?\s*\.?\s*ago/i;
@@ -29,36 +33,6 @@ const NEXT_PAGE_SELECTORS = [
   'a:has-text("Load more")',
 ];
 
-export function isApplicantsListUrl(url: string): boolean {
-  try {
-    const parsed = new URL(url);
-    const path = parsed.pathname.toLowerCase();
-    return (
-      path.includes("/applicant") ||
-      path.includes("/application") ||
-      path.includes("/applications")
-    );
-  } catch {
-    return false;
-  }
-}
-
-/** Public browse-all-candidates catalog (not your job applicants) */
-export function isBrowseCatalogUrl(url: string): boolean {
-  try {
-    const parsed = new URL(url);
-    const path = parsed.pathname.toLowerCase();
-    if (isApplicantsListUrl(url)) return false;
-    return (
-      path === "/find-candidate" ||
-      path === "/find-candidate-singapore" ||
-      /^\/find-candidate-[^/]+\/?$/.test(path)
-    );
-  } catch {
-    return false;
-  }
-}
-
 export function isResumeProfileUrl(href: string): boolean {
   try {
     const url = new URL(href, BASE_URL);
@@ -73,7 +47,13 @@ export async function resolveApplicantsPage(
   page: Page,
   applicantsUrl?: string,
 ): Promise<string> {
-  const target = applicantsUrl?.trim() || DEFAULT_APPLICANTS_URL;
+  const target = resolveEmployerApplicantsUrl(applicantsUrl);
+  if (applicantsUrl?.trim() && isBrowseCatalogUrl(applicantsUrl.trim())) {
+    console.warn(
+      `Applicants URL "${applicantsUrl.trim()}" is the public candidate catalog, not your job applicants list. ` +
+        `Using ${target} instead — update Settings with your job's applicants page URL.`,
+    );
+  }
 
   await assertEmployerLoggedIn(page, target);
 

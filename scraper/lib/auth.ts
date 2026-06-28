@@ -1,5 +1,11 @@
 import type { Page } from "playwright";
 import { delay } from "./utils.js";
+import {
+  DEFAULT_APPLICANTS_URL,
+  isBrowseCatalogUrl,
+  isEmployerLandingUrl,
+  resolveEmployerApplicantsUrl,
+} from "./urls.js";
 
 const BASE_URL = "https://www.helperplace.com";
 const LOGIN_URL = `${BASE_URL}/login`;
@@ -55,9 +61,16 @@ export async function login(
     try {
       if (await attempt.run()) {
         await establishEmployerSession(page, options?.afterLoginUrl);
-        return;
+        if (await isEmployerLoggedIn(page)) {
+          return;
+        }
+        failures.push(
+          `${attempt.label}: login form submitted but employer session was not established ` +
+            `(currently at ${page.url()}).`,
+        );
+      } else {
+        failures.push(`${attempt.label}: login session was not established after submit`);
       }
-      failures.push(`${attempt.label}: login session was not established after submit`);
     } catch (error) {
       const step = error instanceof LoginStepError ? error.step : "unknown";
       const detail = error instanceof Error ? error.message : String(error);
@@ -81,7 +94,11 @@ export async function isEmployerLoggedIn(page: Page): Promise<boolean> {
     return false;
   }
 
-  if (isEmployerApplicantsUrl(url) || url.includes("/dashboard") || url.includes("/manage-job")) {
+  if (isBrowseCatalogUrl(url)) {
+    return false;
+  }
+
+  if (isEmployerLandingUrl(url)) {
     return true;
   }
 
@@ -131,9 +148,14 @@ export async function assertEmployerLoggedIn(
   }
 
   const url = page.url();
+  const hint = isBrowseCatalogUrl(url)
+    ? "The saved applicants URL may be the public candidate catalog (e.g. /find-candidate). " +
+      `Update Settings to your job applicants page (e.g. ${DEFAULT_APPLICANTS_URL}). `
+    : "";
   throw new Error(
     "HelperPlace employer verification failed after login. " +
       `Current URL: ${url}. ` +
+      hint +
       "Expected employer nav (e.g. Manage Job, Dashboard, Applicants). " +
       "The scraper may have hit the public candidate catalog instead.",
   );
@@ -361,14 +383,13 @@ async function waitForLoginComplete(page: Page): Promise<boolean> {
   for (let attempt = 0; attempt < 12; attempt++) {
     const url = page.url();
     const onLoginPage = url.includes("/login");
-    const onDashboard = url.includes("/dashboard");
-    const onEmployerApplicants = isEmployerApplicantsUrl(url);
+    const onEmployerLanding = isEmployerLandingUrl(url);
     const loginFormVisible = await page
       .locator("#password, input[type='password']")
       .isVisible({ timeout: 500 })
       .catch(() => false);
 
-    if (onDashboard || onEmployerApplicants) {
+    if (onEmployerLanding) {
       await delay(1_000);
       return true;
     }
@@ -377,6 +398,11 @@ async function waitForLoginComplete(page: Page): Promise<boolean> {
       if (await isEmployerLoggedIn(page)) {
         await delay(1_000);
         return true;
+      }
+
+      if (isBrowseCatalogUrl(url)) {
+        // Leaving the login form for the public catalog is not an employer session.
+        return false;
       }
     }
 
@@ -391,29 +417,24 @@ async function waitForLoginComplete(page: Page): Promise<boolean> {
   return false;
 }
 
-function isEmployerApplicantsUrl(url: string): boolean {
-  try {
-    const path = new URL(url).pathname.toLowerCase();
-    return (
-      path.includes("/applicant") ||
-      path.includes("/application") ||
-      path.includes("/applications")
-    );
-  } catch {
-    return false;
-  }
-}
-
 async function establishEmployerSession(
   page: Page,
   preferredUrl?: string,
 ): Promise<void> {
+  const applicantsTarget = resolveEmployerApplicantsUrl(preferredUrl);
+  if (preferredUrl?.trim() && isBrowseCatalogUrl(preferredUrl.trim())) {
+    console.warn(
+      `Ignoring browse-catalog applicants URL (${preferredUrl.trim()}); ` +
+        `navigating to ${applicantsTarget} instead.`,
+    );
+  }
+
   const targets = [
-    preferredUrl?.trim(),
     `${BASE_URL}/dashboard`,
     `${BASE_URL}/manage-job`,
-    `${BASE_URL}/find-candidate-singapore/applicant`,
-  ].filter((url): url is string => Boolean(url));
+    applicantsTarget,
+    DEFAULT_APPLICANTS_URL,
+  ].filter((url, index, list) => list.indexOf(url) === index);
 
   for (const target of targets) {
     await page
@@ -423,6 +444,10 @@ async function establishEmployerSession(
     await delay(2_500);
 
     if (page.url().includes("/login")) {
+      continue;
+    }
+
+    if (isBrowseCatalogUrl(page.url())) {
       continue;
     }
 
