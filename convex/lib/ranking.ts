@@ -70,8 +70,29 @@ export const DEFAULT_HARD_FILTERS: HardFilters = {
   requireStartByOct2026: true,
   requireFinishedContractOrSingapore: true,
   requireEnglish: true,
-  requireBabyChildCareInRecentWork: true,
+  // Opt-in: strict check that baby + child care appear in recent job duties.
+  requireBabyChildCareInRecentWork: false,
 };
+
+/** Fill only missing keys from defaults. Explicit `false` is preserved. */
+export function mergeHardFilters(
+  stored: Partial<HardFilters> | undefined,
+): HardFilters {
+  const s = stored ?? {};
+  return {
+    requireReferenceLetter:
+      s.requireReferenceLetter ?? DEFAULT_HARD_FILTERS.requireReferenceLetter,
+    requireStartByOct2026:
+      s.requireStartByOct2026 ?? DEFAULT_HARD_FILTERS.requireStartByOct2026,
+    requireFinishedContractOrSingapore:
+      s.requireFinishedContractOrSingapore ??
+      DEFAULT_HARD_FILTERS.requireFinishedContractOrSingapore,
+    requireEnglish: s.requireEnglish ?? DEFAULT_HARD_FILTERS.requireEnglish,
+    requireBabyChildCareInRecentWork:
+      s.requireBabyChildCareInRecentWork ??
+      DEFAULT_HARD_FILTERS.requireBabyChildCareInRecentWork,
+  };
+}
 
 export const DEFAULT_RANKING_WEIGHTS: RankingWeights = {
   perReferenceLetter: 15,

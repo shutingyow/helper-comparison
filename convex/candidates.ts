@@ -9,15 +9,10 @@ import {
 } from "./schema";
 import { getCurrentUser } from "./lib/auth";
 import {
-  computeScore,
-  DEFAULT_HARD_FILTERS,
-  evaluateHardFilters,
-  parseHelperPlaceDate,
-  passesAllHardFilters,
-  type CandidateInput,
-} from "./lib/ranking";
-import { normalizeSingaporePhone } from "./lib/phone";
-import { sortWorkHistoryByRecency } from "./lib/workHistory";
+  getPreferencesForUser,
+  recalculateCandidatesForUser,
+  scoreCandidate,
+} from "./lib/candidateScoring";
 
 const candidateDoc = v.object({
   _id: v.id("candidates"),
@@ -65,87 +60,28 @@ const candidateDoc = v.object({
   lastSeenAt: v.number(),
 });
 
-async function getPreferencesForUser(
-  ctx: { db: import("./_generated/server").QueryCtx["db"] },
-  userId: import("./_generated/dataModel").Id<"users">,
-) {
-  const prefs = await ctx.db
-    .query("preferences")
-    .withIndex("by_user", (q) => q.eq("userId", userId))
-    .unique();
-
-  if (!prefs) {
-    throw new Error("Preferences not initialized. Open Preferences to set up your account.");
-  }
-
-  return prefs;
-}
-
-function mergeHardFilters(
-  stored: Partial<typeof DEFAULT_HARD_FILTERS> | undefined,
-) {
-  return {
-    ...DEFAULT_HARD_FILTERS,
-    ...stored,
-  };
-}
-
-function enrichCandidateFields(
+async function enrichCandidateFields(
   input: {
     availableFrom?: string;
     phone?: string;
     whatsapp?: string;
-    [key: string]: unknown;
+    hasReferenceLetter: boolean;
+    referenceLetterCount: number;
+    contractStatus?: string;
+    presentLocation?: string;
+    languages: string[];
+    skills: string[];
+    yearsExperience?: number;
+    name: string;
+    age?: number;
+    gender?: string;
+    nationality?: string;
+    aboutMe?: string;
+    workHistory: import("./lib/ranking").CandidateInput["workHistory"];
   },
   prefs: Awaited<ReturnType<typeof getPreferencesForUser>>,
 ) {
-  const availableFromTimestamp =
-    input.availableFrom !== undefined
-      ? parseHelperPlaceDate(input.availableFrom)
-      : undefined;
-
-  const phone = normalizeSingaporePhone(input.phone);
-  const whatsapp = normalizeSingaporePhone(input.whatsapp ?? input.phone);
-
-  const candidateInput = {
-    hasReferenceLetter: input.hasReferenceLetter as boolean,
-    referenceLetterCount: input.referenceLetterCount as number,
-    availableFrom: input.availableFrom as string | undefined,
-    availableFromTimestamp,
-    contractStatus: input.contractStatus as string | undefined,
-    presentLocation: input.presentLocation as string | undefined,
-    languages: input.languages as string[],
-    skills: input.skills as string[],
-    yearsExperience: input.yearsExperience as number | undefined,
-    name: input.name as string,
-    age: input.age as number | undefined,
-    gender: input.gender as string | undefined,
-    nationality: input.nationality as string | undefined,
-    aboutMe: input.aboutMe as string | undefined,
-    workHistory: input.workHistory as CandidateInput["workHistory"],
-  };
-
-  const filterResults = evaluateHardFilters(
-    candidateInput,
-    mergeHardFilters(prefs.hardFilters),
-    prefs.targetStartDate,
-  );
-  const passesHardFilters = passesAllHardFilters(filterResults);
-  const score = computeScore(
-    candidateInput,
-    prefs.rankingWeights,
-    prefs.desiredSkills,
-    prefs.targetStartDate,
-  );
-
-  return {
-    availableFromTimestamp,
-    phone,
-    whatsapp,
-    filterResults,
-    passesHardFilters,
-    score,
-  };
+  return scoreCandidate(input, prefs);
 }
 
 function belongsToUser(
@@ -578,27 +514,7 @@ export const recalculateScores = mutation({
   returns: v.object({ updated: v.number() }),
   handler: async (ctx) => {
     const user = await getCurrentUser(ctx);
-    const prefs = await getPreferencesForUser(ctx, user._id);
-    const candidates = await ctx.db
-      .query("candidates")
-      .withIndex("by_user", (q) => q.eq("userId", user._id))
-      .collect();
-    let updated = 0;
-
-    for (const candidate of candidates) {
-      const enriched = enrichCandidateFields(candidate, prefs);
-      await ctx.db.patch("candidates", candidate._id, {
-        availableFromTimestamp: enriched.availableFromTimestamp,
-        phone: enriched.phone,
-        whatsapp: enriched.whatsapp,
-        workHistory: sortWorkHistoryByRecency(candidate.workHistory),
-        filterResults: enriched.filterResults,
-        passesHardFilters: enriched.passesHardFilters,
-        score: enriched.score,
-      });
-      updated += 1;
-    }
-
+    const updated = await recalculateCandidatesForUser(ctx, user._id);
     return { updated };
   },
 });

@@ -1,10 +1,12 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { getCurrentUser } from "./lib/auth";
+import { recalculateCandidatesForUser } from "./lib/candidateScoring";
 import {
   DEFAULT_DESIRED_SKILLS,
   DEFAULT_HARD_FILTERS,
   DEFAULT_RANKING_WEIGHTS,
+  mergeHardFilters,
 } from "./lib/ranking";
 
 const hardFiltersValidator = v.object({
@@ -14,15 +16,6 @@ const hardFiltersValidator = v.object({
   requireEnglish: v.boolean(),
   requireBabyChildCareInRecentWork: v.boolean(),
 });
-
-function mergeHardFilters(
-  stored: Partial<import("./lib/ranking").HardFilters> | undefined,
-): import("./lib/ranking").HardFilters {
-  return {
-    ...DEFAULT_HARD_FILTERS,
-    ...stored,
-  };
-}
 
 const rankingWeightsValidator = v.object({
   perReferenceLetter: v.number(),
@@ -78,7 +71,7 @@ export const initialize = mutation({
 
     return await ctx.db.insert("preferences", {
       userId: user._id,
-      hardFilters: DEFAULT_HARD_FILTERS,
+      hardFilters: { ...DEFAULT_HARD_FILTERS },
       rankingWeights: DEFAULT_RANKING_WEIGHTS,
       desiredSkills: DEFAULT_DESIRED_SKILLS,
       targetStartDate: "2026-10-01",
@@ -105,7 +98,7 @@ export const update = mutation({
       existing?._id ??
       (await ctx.db.insert("preferences", {
         userId: user._id,
-        hardFilters: DEFAULT_HARD_FILTERS,
+        hardFilters: { ...DEFAULT_HARD_FILTERS },
         rankingWeights: DEFAULT_RANKING_WEIGHTS,
         desiredSkills: DEFAULT_DESIRED_SKILLS,
         targetStartDate: "2026-10-01",
@@ -114,8 +107,16 @@ export const update = mutation({
     const updates: Record<string, unknown> = {};
 
     if (args.hardFilters !== undefined) {
-      // Store the user's explicit choices; merge defaults only on read for legacy docs.
-      updates.hardFilters = args.hardFilters;
+      // Persist the user's explicit on/off choices for every filter.
+      updates.hardFilters = {
+        requireReferenceLetter: args.hardFilters.requireReferenceLetter,
+        requireStartByOct2026: args.hardFilters.requireStartByOct2026,
+        requireFinishedContractOrSingapore:
+          args.hardFilters.requireFinishedContractOrSingapore,
+        requireEnglish: args.hardFilters.requireEnglish,
+        requireBabyChildCareInRecentWork:
+          args.hardFilters.requireBabyChildCareInRecentWork,
+      };
     }
     if (args.rankingWeights !== undefined) {
       updates.rankingWeights = args.rankingWeights;
@@ -129,6 +130,7 @@ export const update = mutation({
 
     if (Object.keys(updates).length > 0) {
       await ctx.db.patch("preferences", prefsId, updates);
+      await recalculateCandidatesForUser(ctx, user._id);
     }
 
     return prefsId;

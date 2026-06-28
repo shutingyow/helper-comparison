@@ -13,6 +13,7 @@ import type * as ingest from "../ingest.js";
 import type * as ingestPublic from "../ingestPublic.js";
 import type * as lib_auth from "../lib/auth.js";
 import type * as lib_candidateFields from "../lib/candidateFields.js";
+import type * as lib_candidateScoring from "../lib/candidateScoring.js";
 import type * as lib_encryption from "../lib/encryption.js";
 import type * as lib_phone from "../lib/phone.js";
 import type * as lib_ranking from "../lib/ranking.js";
@@ -36,6 +37,7 @@ declare const fullApi: ApiFromModules<{
   ingestPublic: typeof ingestPublic;
   "lib/auth": typeof lib_auth;
   "lib/candidateFields": typeof lib_candidateFields;
+  "lib/candidateScoring": typeof lib_candidateScoring;
   "lib/encryption": typeof lib_encryption;
   "lib/phone": typeof lib_phone;
   "lib/ranking": typeof lib_ranking;

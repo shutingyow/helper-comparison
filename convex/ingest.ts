@@ -6,12 +6,8 @@ import {
   DEFAULT_DESIRED_SKILLS,
   DEFAULT_HARD_FILTERS,
   DEFAULT_RANKING_WEIGHTS,
-  computeScore,
-  evaluateHardFilters,
-  parseHelperPlaceDate,
-  passesAllHardFilters,
 } from "./lib/ranking";
-import { normalizeSingaporePhone } from "./lib/phone";
+import { scoreCandidate } from "./lib/candidateScoring";
 import { sortWorkHistoryByRecency } from "./lib/workHistory";
 
 const scrapeRunInput = v.object({
@@ -33,7 +29,7 @@ async function getOrCreatePreferences(
 
   const id = await ctx.db.insert("preferences", {
     userId,
-    hardFilters: DEFAULT_HARD_FILTERS,
+    hardFilters: { ...DEFAULT_HARD_FILTERS },
     rankingWeights: DEFAULT_RANKING_WEIGHTS,
     desiredSkills: DEFAULT_DESIRED_SKILLS,
     targetStartDate: "2026-10-01",
@@ -62,48 +58,14 @@ export const batch = internalMutation({
     let updatedCount = 0;
 
     for (const raw of args.candidates) {
-      const availableFromTimestamp = raw.availableFrom
-        ? parseHelperPlaceDate(raw.availableFrom)
-        : undefined;
-      const phone = normalizeSingaporePhone(raw.phone);
-      const whatsapp = normalizeSingaporePhone(raw.whatsapp ?? raw.phone);
-
-      const hardFilters = {
-        ...DEFAULT_HARD_FILTERS,
-        ...prefs.hardFilters,
-      };
-
       const sortedWorkHistory = sortWorkHistoryByRecency(raw.workHistory);
 
-      const candidateInput = {
-        hasReferenceLetter: raw.hasReferenceLetter,
-        referenceLetterCount: raw.referenceLetterCount,
-        availableFrom: raw.availableFrom,
-        availableFromTimestamp,
-        contractStatus: raw.contractStatus,
-        presentLocation: raw.presentLocation,
-        languages: raw.languages,
-        skills: raw.skills,
-        yearsExperience: raw.yearsExperience,
-        name: raw.name,
-        age: raw.age,
-        gender: raw.gender,
-        nationality: raw.nationality,
-        aboutMe: raw.aboutMe,
-        workHistory: sortedWorkHistory,
-      };
-
-      const filterResults = evaluateHardFilters(
-        candidateInput,
-        hardFilters,
-        prefs.targetStartDate,
-      );
-      const passesHardFilters = passesAllHardFilters(filterResults);
-      const score = computeScore(
-        candidateInput,
-        prefs.rankingWeights,
-        prefs.desiredSkills,
-        prefs.targetStartDate,
+      const scored = scoreCandidate(
+        {
+          ...raw,
+          workHistory: sortedWorkHistory,
+        },
+        prefs,
       );
 
       const existing = await ctx.db
@@ -125,7 +87,7 @@ export const batch = internalMutation({
         contractStatus: raw.contractStatus,
         presentLocation: raw.presentLocation,
         availableFrom: raw.availableFrom,
-        availableFromTimestamp,
+        availableFromTimestamp: scored.availableFromTimestamp,
         skills: raw.skills,
         languages: raw.languages,
         cookingSkills: raw.cookingSkills,
@@ -138,21 +100,21 @@ export const batch = internalMutation({
         salaryExpectation: raw.salaryExpectation,
         accommodation: raw.accommodation,
         dayOff: raw.dayOff,
-        phone,
-        whatsapp,
+        phone: scored.phone,
+        whatsapp: scored.whatsapp,
         rawHtml: raw.rawHtml,
         scrapedAt: raw.scrapedAt ?? now,
-        score,
-        passesHardFilters,
-        filterResults,
+        score: scored.score,
+        passesHardFilters: scored.passesHardFilters,
+        filterResults: scored.filterResults,
         lastSeenAt: now,
       };
 
       if (existing) {
         await ctx.db.patch("candidates", existing._id, {
           ...fields,
-          phone: phone ?? existing.phone,
-          whatsapp: whatsapp ?? existing.whatsapp,
+          phone: scored.phone ?? existing.phone,
+          whatsapp: scored.whatsapp ?? existing.whatsapp,
         });
         updatedCount += 1;
       } else {

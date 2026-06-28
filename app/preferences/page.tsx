@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { usePreferences, useUpdatePreferences } from "@/hooks/usePreferences";
 import type { HardFilters, RankingWeights } from "@/lib/types";
+import { DEFAULT_HARD_FILTERS, DEFAULT_RANKING_WEIGHTS } from "@/convex/lib/ranking";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -11,23 +12,7 @@ import { Button } from "@/components/ui/button";
 import { LoadingState } from "@/components/LoadingState";
 import { ConvexGuard } from "@/components/ConvexGuard";
 
-const DEFAULT_HARD_FILTERS: HardFilters = {
-  requireReferenceLetter: true,
-  requireStartByOct2026: true,
-  requireFinishedContractOrSingapore: true,
-  requireEnglish: true,
-  requireBabyChildCareInRecentWork: true,
-};
-
-const DEFAULT_WEIGHTS: RankingWeights = {
-  perReferenceLetter: 10,
-  perDesiredSkill: 5,
-  perYearExperience: 3,
-  maxExperienceBonus: 25,
-  startDateWithinTwoWeeks: 15,
-  finishedContractSingaporeBonus: 10,
-  profileCompleteness: 5,
-};
+const DEFAULT_WEIGHTS: RankingWeights = DEFAULT_RANKING_WEIGHTS;
 
 const HARD_FILTER_FIELDS: Array<{
   key: keyof HardFilters;
@@ -87,7 +72,15 @@ export default function PreferencesPage() {
 
   useEffect(() => {
     if (prefs) {
-      setHardFilters(prefs.hardFilters);
+      setHardFilters({
+        requireReferenceLetter: prefs.hardFilters.requireReferenceLetter,
+        requireStartByOct2026: prefs.hardFilters.requireStartByOct2026,
+        requireFinishedContractOrSingapore:
+          prefs.hardFilters.requireFinishedContractOrSingapore,
+        requireEnglish: prefs.hardFilters.requireEnglish,
+        requireBabyChildCareInRecentWork:
+          prefs.hardFilters.requireBabyChildCareInRecentWork,
+      });
       setRankingWeights(prefs.rankingWeights);
       setDesiredSkills(prefs.desiredSkills.join(", "));
       setTargetStartDate(prefs.targetStartDate);
@@ -146,7 +139,7 @@ export default function PreferencesPage() {
                     <Checkbox
                       id={key}
                       label={label}
-                      checked={hardFilters[key]}
+                      checked={hardFilters[key] === true}
                       onChange={(e) => {
                         setHardFilters((f) => ({ ...f, [key]: e.target.checked }));
                         markDirty();

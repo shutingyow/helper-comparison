@@ -10,11 +10,9 @@ export function usePreferences() {
 
 export function useUpdatePreferences() {
   const update = useMutation(api.preferences.update);
-  const recalculate = useMutation(api.candidates.recalculateScores);
 
   return async (args: UpdatePreferencesArgs) => {
     await update(args);
-    await recalculate({});
   };
 }
 

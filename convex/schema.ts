@@ -44,7 +44,7 @@ const hardFiltersShape = v.object({
   requireStartByOct2026: v.boolean(),
   requireFinishedContractOrSingapore: v.boolean(),
   requireEnglish: v.boolean(),
-  requireBabyChildCareInRecentWork: v.optional(v.boolean()),
+  requireBabyChildCareInRecentWork: v.boolean(),
 });
 
 const rankingWeightsShape = v.object({
