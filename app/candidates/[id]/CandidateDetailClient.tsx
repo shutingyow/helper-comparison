@@ -166,22 +166,51 @@ function CandidateProfile({
         </Card>
       </div>
 
-      {(phone || candidate.whatsapp || candidate.phone) && (
+      {candidate.aboutMe && (
         <Card>
           <CardHeader>
-            <CardTitle>WhatsApp outreach</CardTitle>
+            <CardTitle>About</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-6">
-            <WhatsAppComposerSingle candidate={candidate} />
-            <div>
-              <p className="mb-3 text-sm font-medium text-stone-700">History</p>
-              <OutreachHistory messages={outreachHistory} />
-            </div>
+          <CardContent>
+            <p className="whitespace-pre-wrap text-sm text-stone-700">
+              {candidate.aboutMe}
+            </p>
           </CardContent>
         </Card>
       )}
 
-      <InterviewScheduler candidate={candidate} />
+      {workHistory.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Work history</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {workHistory.map((job, i) => (
+              <div
+                key={i}
+                className="border-b border-stone-100 pb-4 last:border-0 last:pb-0"
+              >
+                <p className="font-medium text-stone-900">
+                  {job.title}
+                  {job.location ? ` · ${job.location}` : ""}
+                  {job.employer ? ` — ${job.employer}` : ""}
+                </p>
+                <p className="text-xs text-stone-500">{job.period}</p>
+                <p className="mt-1 text-sm text-stone-600">{job.duties}</p>
+                <span
+                  className={`mt-1 inline-block text-xs ${
+                    job.hasReferenceLetter ? "text-emerald-700" : "text-stone-400"
+                  }`}
+                >
+                  {job.hasReferenceLetter
+                    ? "Has reference letter"
+                    : "No reference letter"}
+                </span>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
 
       {candidate.skills.length > 0 && (
         <Card>
@@ -253,51 +282,22 @@ function CandidateProfile({
         </Card>
       )}
 
-      {candidate.aboutMe && (
+      {(phone || candidate.whatsapp || candidate.phone) && (
         <Card>
           <CardHeader>
-            <CardTitle>About</CardTitle>
+            <CardTitle>WhatsApp outreach</CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="whitespace-pre-wrap text-sm text-stone-700">
-              {candidate.aboutMe}
-            </p>
+          <CardContent className="space-y-6">
+            <WhatsAppComposerSingle candidate={candidate} />
+            <div>
+              <p className="mb-3 text-sm font-medium text-stone-700">History</p>
+              <OutreachHistory messages={outreachHistory} />
+            </div>
           </CardContent>
         </Card>
       )}
 
-      {workHistory.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Work history</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {workHistory.map((job, i) => (
-              <div
-                key={i}
-                className="border-b border-stone-100 pb-4 last:border-0 last:pb-0"
-              >
-                <p className="font-medium text-stone-900">
-                  {job.title}
-                  {job.location ? ` · ${job.location}` : ""}
-                  {job.employer ? ` — ${job.employer}` : ""}
-                </p>
-                <p className="text-xs text-stone-500">{job.period}</p>
-                <p className="mt-1 text-sm text-stone-600">{job.duties}</p>
-                <span
-                  className={`mt-1 inline-block text-xs ${
-                    job.hasReferenceLetter ? "text-emerald-700" : "text-stone-400"
-                  }`}
-                >
-                  {job.hasReferenceLetter
-                    ? "Has reference letter"
-                    : "No reference letter"}
-                </span>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      )}
+      <InterviewScheduler candidate={candidate} />
 
       <Card>
         <CardHeader>
