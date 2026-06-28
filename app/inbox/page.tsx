@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { Suspense, useMemo, useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { Search, X } from "lucide-react";
 import { useInboxCandidates } from "@/hooks/useCandidates";
@@ -29,7 +29,7 @@ function matchesNameSearch(name: string, query: string): boolean {
   return name.toLowerCase().includes(trimmed.toLowerCase());
 }
 
-export default function InboxPage() {
+function InboxPageContent() {
   const searchParams = useSearchParams();
   const candidates = useInboxCandidates();
   const [searchQuery, setSearchQuery] = useState("");
@@ -164,5 +164,19 @@ export default function InboxPage() {
         )}
       </ConvexGuard>
     </div>
+  );
+}
+
+export default function InboxPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8">
+          <LoadingState rows={6} />
+        </div>
+      }
+    >
+      <InboxPageContent />
+    </Suspense>
   );
 }
