@@ -12,7 +12,7 @@ const hardFiltersValidator = v.object({
   requireStartByOct2026: v.boolean(),
   requireFinishedContractOrSingapore: v.boolean(),
   requireEnglish: v.boolean(),
-  requireBabyChildCareInRecentWork: v.optional(v.boolean()),
+  requireBabyChildCareInRecentWork: v.boolean(),
 });
 
 function mergeHardFilters(
@@ -114,7 +114,8 @@ export const update = mutation({
     const updates: Record<string, unknown> = {};
 
     if (args.hardFilters !== undefined) {
-      updates.hardFilters = mergeHardFilters(args.hardFilters);
+      // Store the user's explicit choices; merge defaults only on read for legacy docs.
+      updates.hardFilters = args.hardFilters;
     }
     if (args.rankingWeights !== undefined) {
       updates.rankingWeights = args.rankingWeights;

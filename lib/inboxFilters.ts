@@ -10,6 +10,7 @@ export type InboxFilter =
   | "new"
   | "shortlisted"
   | "passes_hard_filters"
+  | "fails_hard_filters"
   | "no_phone"
   | "messaged"
   | "replied"
@@ -22,6 +23,7 @@ export const INBOX_FILTER_OPTIONS: { value: InboxFilter; label: string }[] = [
   { value: "new", label: "New / unreviewed" },
   { value: "shortlisted", label: "Shortlisted" },
   { value: "passes_hard_filters", label: "Passes hard filters" },
+  { value: "fails_hard_filters", label: "Fails hard filters" },
   { value: "no_phone", label: "No WhatsApp phone" },
   { value: "messaged", label: "Messaged" },
   { value: "replied", label: "Replied (WhatsApp)" },
@@ -33,6 +35,10 @@ export const INBOX_FILTER_OPTIONS: { value: InboxFilter; label: string }[] = [
 export const INBOX_FILTER_LABELS: Record<InboxFilter, string> = Object.fromEntries(
   INBOX_FILTER_OPTIONS.map((o) => [o.value, o.label]),
 ) as Record<InboxFilter, string>;
+
+export function isInboxFilter(value: string): value is InboxFilter {
+  return INBOX_FILTER_OPTIONS.some((o) => o.value === value);
+}
 
 function hasBeenMessaged(
   candidate: Candidate,
@@ -59,6 +65,8 @@ export function matchesInboxFilter(
       return candidate.status === "shortlisted";
     case "passes_hard_filters":
       return candidate.passesHardFilters;
+    case "fails_hard_filters":
+      return !candidate.passesHardFilters;
     case "no_phone":
       return !getCandidatePhoneE164(candidate);
     case "messaged":

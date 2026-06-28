@@ -136,7 +136,8 @@ export default function PreferencesPage() {
               <CardHeader>
                 <CardTitle>Hard filters</CardTitle>
                 <CardDescription>
-                  Candidates failing any enabled filter are moved to Excluded.
+                  Enable filters to exclude candidates who don&apos;t meet your
+                  requirements. Use Inbox → &quot;Fails hard filters&quot; to review them.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">

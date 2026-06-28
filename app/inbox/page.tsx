@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { Search, X } from "lucide-react";
 import { useInboxCandidates } from "@/hooks/useCandidates";
 import { useLatestOutreachBatch } from "@/hooks/useOutreach";
@@ -15,6 +16,7 @@ import {
   filterInboxCandidates,
   INBOX_FILTER_OPTIONS,
   INBOX_FILTER_LABELS,
+  isInboxFilter,
   type InboxFilter,
 } from "@/lib/inboxFilters";
 import type { Doc } from "@/convex/_generated/dataModel";
@@ -28,9 +30,17 @@ function matchesNameSearch(name: string, query: string): boolean {
 }
 
 export default function InboxPage() {
+  const searchParams = useSearchParams();
   const candidates = useInboxCandidates();
   const [searchQuery, setSearchQuery] = useState("");
   const [inboxFilter, setInboxFilter] = useState<InboxFilter>("all");
+
+  useEffect(() => {
+    const filterParam = searchParams.get("filter");
+    if (filterParam && isInboxFilter(filterParam)) {
+      setInboxFilter(filterParam);
+    }
+  }, [searchParams]);
 
   const candidateIds = useMemo(() => candidates?.map((c) => c._id) ?? [], [candidates]);
   const latestBatch = useLatestOutreachBatch(candidateIds);

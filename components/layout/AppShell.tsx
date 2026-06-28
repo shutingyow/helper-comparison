@@ -6,7 +6,6 @@ import { SignOutButton } from "@clerk/nextjs";
 import {
   Inbox,
   CalendarDays,
-  Ban,
   MessageCircle,
   Settings,
   KeyRound,
@@ -21,7 +20,6 @@ import { cn } from "@/lib/utils";
 const navItems = [
   { href: "/inbox", label: "Inbox", icon: Inbox },
   { href: "/today", label: "Today", icon: CalendarDays },
-  { href: "/excluded", label: "Excluded", icon: Ban },
   { href: "/outreach", label: "Outreach", icon: MessageCircle },
   { href: "/preferences", label: "Preferences", icon: Settings },
   { href: "/settings", label: "HelperPlace", icon: KeyRound },
@@ -145,7 +143,10 @@ export function MobileNav() {
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const isAuthPage = pathname.startsWith("/sign-in") || pathname.startsWith("/login");
+  const isAuthPage =
+    pathname.startsWith("/sign-in") ||
+    pathname.startsWith("/sign-up") ||
+    pathname.startsWith("/login");
 
   if (isAuthPage) {
     return <>{children}</>;

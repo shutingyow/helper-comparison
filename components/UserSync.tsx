@@ -8,12 +8,16 @@ import { api } from "@/convex/_generated/api";
 export function UserSync() {
   const { isSignedIn, isLoaded } = useAuth();
   const storeUser = useMutation(api.users.store);
+  const initializePreferences = useMutation(api.preferences.initialize);
 
   useEffect(() => {
     if (isLoaded && isSignedIn) {
-      void storeUser({});
+      void (async () => {
+        await storeUser({});
+        await initializePreferences({});
+      })();
     }
-  }, [isLoaded, isSignedIn, storeUser]);
+  }, [isLoaded, isSignedIn, storeUser, initializePreferences]);
 
   return null;
 }
