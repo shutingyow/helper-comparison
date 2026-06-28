@@ -30,40 +30,60 @@ jobs:
         working-directory: scraper
         run: npx playwright install --with-deps chromium
 
-      - name: Verify ingest API
+      - name: Verify ingest API and list scrape targets
+        id: targets
         env:
           INGEST_URL: ${{ secrets.INGEST_URL }}
           INGEST_SECRET: ${{ secrets.INGEST_SECRET }}
-          SCRAPE_USER_ID: ${{ secrets.SCRAPE_USER_ID }}
         run: |
           ORIGIN=$(node -e "console.log(new URL(process.env.INGEST_URL).origin)")
-          URL="${ORIGIN}/api/ingest/known-ids?userId=${SCRAPE_USER_ID}"
+          URL="${ORIGIN}/api/scraper/targets"
           echo "Checking ${URL}"
-          STATUS=$(curl -sS -o /tmp/ingest-check.json -w "%{http_code}" \
+          STATUS=$(curl -sS -o /tmp/scrape-targets.json -w "%{http_code}" \
             -H "x-ingest-secret: ${INGEST_SECRET}" \
             "${URL}")
-          echo "known-ids HTTP ${STATUS}"
-          head -c 300 /tmp/ingest-check.json
+          echo "targets HTTP ${STATUS}"
+          cat /tmp/scrape-targets.json
           echo ""
           if [ "$STATUS" != "200" ]; then
-            echo "Ingest preflight failed — check INGEST_URL, INGEST_SECRET, and SCRAPE_USER_ID"
+            echo "Ingest preflight failed — check INGEST_URL and INGEST_SECRET"
             exit 1
           fi
-          if ! grep -q '"helperPlaceIds"' /tmp/ingest-check.json; then
-            echo "Ingest preflight returned non-JSON — redeploy Vercel and verify /api/ingest/known-ids exists"
+          if ! grep -q '"targets"' /tmp/scrape-targets.json; then
+            echo "Targets API returned unexpected JSON — redeploy Vercel and verify /api/scraper/targets exists"
             exit 1
+          fi
+          COUNT=$(node -e "const j=JSON.parse(require('fs').readFileSync('/tmp/scrape-targets.json','utf8')); console.log((j.targets||[]).length)")
+          echo "target_count=${COUNT}" >> "$GITHUB_OUTPUT"
+          if [ "$COUNT" = "0" ]; then
+            echo "No users with scrape enabled — nothing to do."
           fi
 
-      - name: Run scraper
+      - name: Run scraper for each user
+        if: steps.targets.outputs.target_count != '0'
         working-directory: scraper
         env:
           INGEST_URL: ${{ secrets.INGEST_URL }}
           INGEST_SECRET: ${{ secrets.INGEST_SECRET }}
-          SCRAPE_USER_ID: ${{ secrets.SCRAPE_USER_ID }}
-          HELPERPLACE_EMAIL: ${{ secrets.HELPERPLACE_EMAIL }}
-          HELPERPLACE_PASSWORD: ${{ secrets.HELPERPLACE_PASSWORD }}
-          HELPERPLACE_APPLICANTS_URL: ${{ secrets.HELPERPLACE_APPLICANTS_URL }}
-        run: npm run scrape
+        run: |
+          ORIGIN=$(node -e "console.log(new URL(process.env.INGEST_URL).origin)")
+          USER_IDS=$(node -e "
+            const j = JSON.parse(require('fs').readFileSync('/tmp/scrape-targets.json', 'utf8'));
+            for (const t of j.targets || []) console.log(t.userId);
+          ")
+          if [ -z "$USER_IDS" ]; then
+            echo "No scrape targets found."
+            exit 0
+          fi
+          FAILED=0
+          for USER_ID in $USER_IDS; do
+            echo "=== Scraping for user ${USER_ID} ==="
+            if ! SCRAPE_USER_ID="$USER_ID" npm run scrape; then
+              echo "Scrape failed for user ${USER_ID}"
+              FAILED=1
+            fi
+          done
+          exit $FAILED
 
       - name: Upload scrape artifact on failure
         if: failure()

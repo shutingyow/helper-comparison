@@ -1,4 +1,3 @@
-import type { IngestPayload } from "../types.js";
 import { getIngestEndpoints } from "./ingest.js";
 
 export interface RemoteScraperConfig {
@@ -8,16 +7,44 @@ export interface RemoteScraperConfig {
   applicantsUrl: string;
 }
 
-export async function fetchRemoteScraperConfig(): Promise<RemoteScraperConfig | null> {
+export interface ScrapeTarget {
+  userId: string;
+}
+
+export async function fetchScrapeTargets(): Promise<ScrapeTarget[]> {
   const secret = process.env.INGEST_SECRET;
-  const userId = process.env.SCRAPE_USER_ID?.trim();
-  if (!secret || !userId) {
+  if (!secret) {
+    throw new Error("INGEST_SECRET is required to list scrape targets.");
+  }
+
+  const { scraperTargetsUrl } = getIngestEndpoints();
+  console.log(`Fetching scrape targets from ${scraperTargetsUrl} ...`);
+
+  const response = await fetch(scraperTargetsUrl, {
+    headers: { "x-ingest-secret": secret },
+  });
+
+  if (!response.ok) {
+    const body = await response.text().catch(() => "");
+    throw new Error(
+      `Could not fetch scrape targets (HTTP ${response.status}). ${body.slice(0, 200)}`,
+    );
+  }
+
+  const body = (await response.json()) as { targets?: ScrapeTarget[] };
+  return body.targets ?? [];
+}
+
+export async function fetchRemoteScraperConfig(userId?: string): Promise<RemoteScraperConfig | null> {
+  const secret = process.env.INGEST_SECRET;
+  const resolvedUserId = userId ?? process.env.SCRAPE_USER_ID?.trim();
+  if (!secret || !resolvedUserId) {
     return null;
   }
 
   const { scraperConfigUrl } = getIngestEndpoints();
-  const url = `${scraperConfigUrl}?userId=${encodeURIComponent(userId)}`;
-  console.log(`Loading HelperPlace credentials from dashboard for user ${userId} ...`);
+  const url = `${scraperConfigUrl}?userId=${encodeURIComponent(resolvedUserId)}`;
+  console.log(`Loading HelperPlace credentials from dashboard for user ${resolvedUserId} ...`);
 
   const response = await fetch(url, {
     headers: { "x-ingest-secret": secret },
@@ -35,13 +62,13 @@ export async function fetchRemoteScraperConfig(): Promise<RemoteScraperConfig | 
   return (await response.json()) as RemoteScraperConfig;
 }
 
-export async function resolveScraperCredentials(): Promise<{
+export async function resolveScraperCredentials(userId?: string): Promise<{
   email: string;
   password: string;
   applicantsUrl?: string;
   userId?: string;
 }> {
-  const remote = await fetchRemoteScraperConfig();
+  const remote = await fetchRemoteScraperConfig(userId);
   if (remote) {
     return {
       email: remote.helperPlaceEmail,
@@ -60,7 +87,7 @@ export async function resolveScraperCredentials(): Promise<{
 
   if (!email || !password) {
     throw new Error(
-      "Missing credentials. Save HelperPlace credentials in Settings (with SCRAPE_USER_ID set) " +
+      "Missing credentials. Save HelperPlace credentials in Settings, set SCRAPE_USER_ID for a single user, " +
         "or set HELPERPLACE_EMAIL and HELPERPLACE_PASSWORD in the scraper environment.",
     );
   }

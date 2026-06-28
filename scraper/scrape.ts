@@ -7,7 +7,7 @@ import { chromium } from "playwright";
 import { assertEmployerLoggedIn, login } from "./lib/auth.js";
 import { collectApplicantProfileUrls, resolveApplicantsPage } from "./lib/applicants.js";
 import { fetchKnownHelperPlaceIds, fetchMissingPhoneCandidates, ingestCandidates } from "./lib/ingest.js";
-import { resolveScraperCredentials } from "./lib/credentials.js";
+import { fetchScrapeTargets, resolveScraperCredentials } from "./lib/credentials.js";
 import { parseProfilesWithRateLimit } from "./parsers/profile.js";
 import { extractHelperPlaceId, normalizeProfileUrl } from "./lib/utils.js";
 import type { IngestPayload, ScrapeRun } from "./types.js";
@@ -19,10 +19,25 @@ config({ path: path.join(__dirname, "..", ".env") });
 
 const PROFILE_DELAY_MS = 1_500;
 
-async function main(): Promise<void> {
-  const dryRun = process.argv.includes("--dry-run");
-  const fullScrape = process.argv.includes("--full");
-  const credentials = await resolveScraperCredentials();
+function parseUserIdArg(): string | undefined {
+  const flag = process.argv.find((arg) => arg.startsWith("--user-id="));
+  return flag?.slice("--user-id=".length).trim() || undefined;
+}
+
+async function runScrapeOnce(options: {
+  dryRun: boolean;
+  fullScrape: boolean;
+  userId?: string;
+}): Promise<void> {
+  if (options.userId) {
+    process.env.SCRAPE_USER_ID = options.userId;
+  }
+
+  const credentials = await resolveScraperCredentials(options.userId);
+  if (credentials.userId) {
+    process.env.SCRAPE_USER_ID = credentials.userId;
+  }
+
   const email = credentials.email;
   const password = credentials.password;
   const applicantsUrl = credentials.applicantsUrl;
@@ -59,7 +74,7 @@ async function main(): Promise<void> {
     console.log(`Found ${profileUrls.length} candidate profile(s) on your applicants list.`);
 
     let urlsToParse = profileUrls;
-    if (!fullScrape && !dryRun) {
+    if (!options.fullScrape && !options.dryRun) {
       const knownIds = await fetchKnownHelperPlaceIds();
       const missingPhoneCandidates = await fetchMissingPhoneCandidates();
       const missingPhoneIds = new Set(
@@ -91,13 +106,13 @@ async function main(): Promise<void> {
       console.log(
         `${urlsToParse.length} profile(s) to parse (${newCount} new, ${backfillCount} phone backfill including ${directBackfillCount} direct from dashboard, ${knownIds.size} already in dashboard).`,
       );
-    } else if (fullScrape) {
+    } else if (options.fullScrape) {
       console.log("Full scrape: parsing all profiles (updates existing records too).");
     }
 
     if (urlsToParse.length === 0 && profileUrls.length > 0) {
       console.log("No new applicants and no phone backfill needed — dashboard is up to date.");
-      if (!dryRun) {
+      if (!options.dryRun) {
         const scrapeRun: ScrapeRun = {
           startedAt,
           finishedAt: Date.now(),
@@ -129,7 +144,7 @@ async function main(): Promise<void> {
 
     const payload: IngestPayload = { candidates, scrapeRun };
 
-    if (dryRun) {
+    if (options.dryRun) {
       const outputDir = path.join(__dirname, "output");
       await mkdir(outputDir, { recursive: true });
       const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
@@ -152,6 +167,29 @@ async function main(): Promise<void> {
   } finally {
     await browser.close();
   }
+}
+
+async function main(): Promise<void> {
+  const dryRun = process.argv.includes("--dry-run");
+  const fullScrape = process.argv.includes("--full");
+  const allUsers = process.argv.includes("--all-users");
+  const userIdArg = parseUserIdArg();
+
+  if (allUsers) {
+    const targets = await fetchScrapeTargets();
+    if (targets.length === 0) {
+      console.log("No users with scrape enabled.");
+      return;
+    }
+    console.log(`Scraping ${targets.length} user(s)...`);
+    for (const target of targets) {
+      console.log(`\n=== User ${target.userId} ===`);
+      await runScrapeOnce({ dryRun, fullScrape, userId: target.userId });
+    }
+    return;
+  }
+
+  await runScrapeOnce({ dryRun, fullScrape, userId: userIdArg });
 }
 
 main().catch((error) => {

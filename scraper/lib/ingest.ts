@@ -8,6 +8,7 @@ export function getIngestEndpoints(): {
   knownIdsUrl: string;
   missingPhoneIdsUrl: string;
   scraperConfigUrl: string;
+  scraperTargetsUrl: string;
 } {
   const raw = (process.env.INGEST_URL ?? DEFAULT_INGEST_URL).trim();
   let origin: string;
@@ -21,6 +22,7 @@ export function getIngestEndpoints(): {
     knownIdsUrl: `${origin}/api/ingest/known-ids`,
     missingPhoneIdsUrl: `${origin}/api/ingest/missing-phone-ids`,
     scraperConfigUrl: `${origin}/api/scraper/config`,
+    scraperTargetsUrl: `${origin}/api/scraper/targets`,
   };
 }
 

@@ -14,7 +14,6 @@ import { ConvexGuard } from "@/components/ConvexGuard";
 export default function SettingsPage() {
   const credentials = useQuery(api.scraperCredentials.getForCurrentUser);
   const saveCredentials = useMutation(api.scraperCredentials.save);
-  const currentUser = useQuery(api.users.current);
 
   const [helperPlaceEmail, setHelperPlaceEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -144,37 +143,23 @@ export default function SettingsPage() {
                   </p>
                 </div>
 
-                <div className="rounded-lg border border-stone-100 p-4">
+                <div className="rounded-lg border border-stone-100 bg-stone-50/50 p-4 space-y-3">
                   <Checkbox
                     id="scrapeEnabled"
-                    label="Enable scraping for this account"
+                    label="Enable daily automatic scrape"
                     checked={scrapeEnabled}
                     onChange={(e) => {
                       setScrapeEnabled(e.target.checked);
                       setSaved(false);
                     }}
                   />
+                  <p className="text-xs text-stone-500">
+                    When enabled, your applicants are imported automatically every day at 8:00am
+                    Singapore time after you save your credentials. No extra setup required.
+                  </p>
                 </div>
               </CardContent>
             </Card>
-
-            {currentUser && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Scraper user ID</CardTitle>
-                  <CardDescription>
-                    For GitHub Actions or manual scraper runs, set{" "}
-                    <code className="text-xs">SCRAPE_USER_ID</code> to this value in Convex and
-                    your scraper environment.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <code className="block break-all rounded-lg bg-stone-100 px-3 py-2 text-xs text-stone-800">
-                    {currentUser._id}
-                  </code>
-                </CardContent>
-              </Card>
-            )}
 
             {error && <p className="text-sm text-rose-600">{error}</p>}
 

@@ -1,6 +1,21 @@
 import { internalQuery } from "./_generated/server";
 import { v } from "convex/values";
 
+export const listEnabledTargets = internalQuery({
+  args: {},
+  returns: v.array(
+    v.object({
+      userId: v.id("users"),
+    }),
+  ),
+  handler: async (ctx) => {
+    const all = await ctx.db.query("scraperCredentials").collect();
+    return all
+      .filter((c) => c.scrapeEnabled && c.encryptedPassword.length > 0)
+      .map((c) => ({ userId: c.userId }));
+  },
+});
+
 export const getByUserId = internalQuery({
   args: { userId: v.id("users") },
   returns: v.union(

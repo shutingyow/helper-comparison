@@ -7,6 +7,7 @@
     "scrape": "tsx scrape.ts",
     "scrape:full": "tsx scrape.ts --full",
     "scrape:dry": "tsx scrape.ts --dry-run",
+    "scrape:all": "tsx scrape.ts --all-users",
     "debug:applicants": "tsx debug-applicants.ts",
     "typecheck": "tsc --noEmit"
   },

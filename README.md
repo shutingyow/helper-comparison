@@ -53,7 +53,7 @@ Set these in the **Convex dashboard** (Settings → Environment Variables):
 | `INGEST_SECRET` | Scraper → API authentication |
 | `CLERK_JWT_ISSUER_DOMAIN` | Validate Clerk JWTs |
 | `CREDENTIALS_ENCRYPTION_KEY` | AES-256-GCM for HelperPlace passwords (`openssl rand -hex 32`) |
-| `SCRAPE_USER_ID` | (Optional) Default user for GitHub Actions scrapes |
+| `SCRAPE_USER_ID` | (Optional) Single-user dev fallback for `npm run scrape` only |
 
 ### 4. Environment variables
 
@@ -67,7 +67,6 @@ Copy `.env.example` to `.env.local` and fill in:
 | `CLERK_JWT_ISSUER_DOMAIN` | Vercel, Convex, local |
 | `INGEST_SECRET` | Vercel, Convex, GitHub Actions, local |
 | `CREDENTIALS_ENCRYPTION_KEY` | Vercel, Convex |
-| `SCRAPE_USER_ID` | Vercel, Convex, GitHub Actions (after first sign-in) |
 | `INGEST_URL` | GitHub Actions — `https://your-app.vercel.app/api/ingest` |
 
 HelperPlace credentials are entered in the app under **HelperPlace** (Settings), not in env vars.
@@ -85,7 +84,7 @@ Visit http://localhost:3000 — you will be redirected to `/sign-in`.
 1. Sign in via Clerk
 2. Open **HelperPlace** in the sidebar (`/settings`)
 3. Enter your HelperPlace employer email, password, and applicants page URL
-4. Copy your **Scraper user ID** and set it as `SCRAPE_USER_ID` in Convex and GitHub Actions
+4. Save — daily scraping is enabled automatically (8am SGT) for all users with saved credentials
 
 Passwords are encrypted with `CREDENTIALS_ENCRYPTION_KEY` before storage. They are never returned to the browser after save.
 
@@ -93,12 +92,14 @@ Passwords are encrypted with `CREDENTIALS_ENCRYPTION_KEY` before storage. They a
 
 ```bash
 cd scraper
-cp ../.env.example .env   # set INGEST_SECRET, INGEST_URL, SCRAPE_USER_ID
+cp ../.env.example .env   # set INGEST_SECRET, INGEST_URL
 npm run scrape -- --dry-run   # saves JSON to scraper/output/
-npm run scrape                # POSTs to ingest API
+npm run scrape                # single user via SCRAPE_USER_ID or HELPERPLACE_* env
+npm run scrape -- --all-users # all users with scrape enabled (like GitHub Actions)
+npm run scrape -- --user-id=<convex-user-id>  # explicit user
 ```
 
-With `SCRAPE_USER_ID` set, the scraper loads credentials from the dashboard API. Without it, legacy `HELPERPLACE_EMAIL` / `HELPERPLACE_PASSWORD` env vars still work.
+For local dev, set optional `SCRAPE_USER_ID` to scrape one account, or use `--all-users` to match production. Legacy `HELPERPLACE_EMAIL` / `HELPERPLACE_PASSWORD` env vars still work without the dashboard.
 
 ### 8. Deploy to Vercel
 
@@ -108,11 +109,11 @@ npx vercel
 
 Add all env vars from step 4 in Vercel project settings, then redeploy.
 
-### 9. Daily GitHub Actions cron (current)
+### 9. Daily GitHub Actions cron
 
-Add repository secrets: `INGEST_URL`, `INGEST_SECRET`, `SCRAPE_USER_ID`.
+Add repository secrets: `INGEST_URL`, `INGEST_SECRET` (one-time setup).
 
-Workflow runs daily at 8am SGT (`.github/workflows/daily-scrape.yml`). Credentials come from the Settings UI — you no longer need `HELPERPLACE_EMAIL` / `HELPERPLACE_PASSWORD` in GitHub secrets if `SCRAPE_USER_ID` is set.
+Workflow runs daily at 8am SGT (`.github/workflows/daily-scrape.yml`). It discovers every user with saved credentials and scrape enabled, then runs the scraper for each — no per-user GitHub secrets or `SCRAPE_USER_ID` needed.
 
 ## Phase 2 (planned)
 

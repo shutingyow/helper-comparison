@@ -91,7 +91,7 @@ export const save = mutation({
       helperPlaceEmail: email,
       encryptedPassword,
       applicantsUrl: args.applicantsUrl.trim(),
-      scrapeEnabled: args.scrapeEnabled ?? existing?.scrapeEnabled ?? true,
+      scrapeEnabled: args.scrapeEnabled ?? true,
       updatedAt: now,
     };
 
@@ -101,6 +101,25 @@ export const save = mutation({
     }
 
     return await ctx.db.insert("scraperCredentials", fields);
+  },
+});
+
+export const listScrapeTargetsWithSecret = action({
+  args: {
+    secret: v.string(),
+  },
+  returns: v.array(
+    v.object({
+      userId: v.id("users"),
+    }),
+  ),
+  handler: async (ctx, args): Promise<Array<{ userId: import("./_generated/dataModel").Id<"users"> }>> => {
+    const expectedSecret = process.env.INGEST_SECRET;
+    if (!expectedSecret || args.secret !== expectedSecret) {
+      throw new Error("Unauthorized");
+    }
+
+    return await ctx.runQuery(internal.scraperCredentialsInternal.listEnabledTargets, {});
   },
 });
 
