@@ -6,6 +6,7 @@ const isPublicRoute = createRouteMatcher([
   "/sign-in(.*)",
   "/sign-up(.*)",
   "/login(.*)",
+  "/auth/complete(.*)",
   "/api/ingest(.*)",
   "/api/scraper(.*)",
 ]);
@@ -18,8 +19,15 @@ function isClerkConfigured(): boolean {
 
 const clerkAuthMiddleware = clerkMiddleware(
   async (auth, request) => {
-    if (!isPublicRoute(request)) {
-      await auth.protect();
+    if (isPublicRoute(request)) {
+      return;
+    }
+
+    const { userId } = await auth();
+    if (!userId) {
+      const signIn = new URL("/sign-in", request.url);
+      signIn.searchParams.set("redirect_url", request.url);
+      return NextResponse.redirect(signIn);
     }
   },
   { signInUrl: "/sign-in" },

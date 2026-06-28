@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { AppShell } from "@/components/layout/AppShell";
-import { UserSync } from "@/components/UserSync";
 import { ConvexClientProvider } from "@/providers/ConvexClientProvider";
 import "./globals.css";
 
@@ -32,7 +31,6 @@ export default function RootLayout({
     >
       <body className="min-h-full">
         <ConvexClientProvider>
-          <UserSync />
           <AppShell>{children}</AppShell>
         </ConvexClientProvider>
       </body>

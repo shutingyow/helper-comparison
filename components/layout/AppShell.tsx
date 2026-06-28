@@ -1,5 +1,6 @@
 "use client";
 
+import { AuthReady } from "@/components/AuthReady";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { SignOutButton } from "@clerk/nextjs";
@@ -146,19 +147,22 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const isAuthPage =
     pathname.startsWith("/sign-in") ||
     pathname.startsWith("/sign-up") ||
-    pathname.startsWith("/login");
+    pathname.startsWith("/login") ||
+    pathname.startsWith("/auth/complete");
 
   if (isAuthPage) {
     return <>{children}</>;
   }
 
   return (
-    <div className="flex min-h-screen bg-warm-50">
-      <Sidebar />
-      <div className="flex min-h-screen flex-1 flex-col pb-16 md:pb-0">
-        <MobileNav />
-        <main className="flex-1 overflow-auto">{children}</main>
+    <AuthReady>
+      <div className="flex min-h-screen bg-warm-50">
+        <Sidebar />
+        <div className="flex min-h-screen flex-1 flex-col pb-16 md:pb-0">
+          <MobileNav />
+          <main className="flex-1 overflow-auto">{children}</main>
+        </div>
       </div>
-    </div>
+    </AuthReady>
   );
 }
