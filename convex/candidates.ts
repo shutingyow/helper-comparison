@@ -88,7 +88,7 @@ function belongsToUser(
   candidate: { userId?: import("./_generated/dataModel").Id<"users"> | undefined },
   userId: import("./_generated/dataModel").Id<"users">,
 ) {
-  return !candidate.userId || candidate.userId === userId;
+  return candidate.userId === userId;
 }
 
 async function logCandidateEvent(

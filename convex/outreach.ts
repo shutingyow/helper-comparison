@@ -30,7 +30,7 @@ async function requireOwnedCandidate(
   candidateId: import("./_generated/dataModel").Id<"candidates">,
 ) {
   const candidate = await ctx.db.get("candidates", candidateId);
-  if (!candidate || (candidate.userId && candidate.userId !== userId)) {
+  if (!candidate || candidate.userId !== userId) {
     throw new Error("Candidate not found");
   }
   return candidate;
@@ -130,7 +130,7 @@ export const markSent = mutation({
   handler: async (ctx, args) => {
     const user = await getCurrentUser(ctx);
     const message = await ctx.db.get("outreachMessages", args.outreachId);
-    if (!message || (message.userId && message.userId !== user._id)) {
+    if (!message || message.userId !== user._id) {
       throw new Error("Outreach message not found");
     }
     if (message.status === "sent" || message.status === "replied") {
@@ -161,7 +161,7 @@ export const markReplied = mutation({
   handler: async (ctx, args) => {
     const user = await getCurrentUser(ctx);
     const message = await ctx.db.get("outreachMessages", args.outreachId);
-    if (!message || (message.userId && message.userId !== user._id)) {
+    if (!message || message.userId !== user._id) {
       throw new Error("Outreach message not found");
     }
 

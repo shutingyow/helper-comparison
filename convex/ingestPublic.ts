@@ -37,11 +37,6 @@ async function resolveIngestUserId(
     }
   }
 
-  const firstUser = await ctx.db.query("users").first();
-  if (firstUser) {
-    return firstUser._id;
-  }
-
   throw new Error(
     "No ingest user configured. Set SCRAPE_USER_ID in Convex or pass userId in the ingest payload.",
   );

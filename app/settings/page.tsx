@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { LoadingState } from "@/components/LoadingState";
 import { ConvexGuard } from "@/components/ConvexGuard";
+import { formatDateTimeSGT } from "@/lib/utils";
 
 export default function SettingsPage() {
   const credentials = useQuery(api.scraperCredentials.getForCurrentUser);
@@ -78,6 +79,12 @@ export default function SettingsPage() {
                 <CardDescription>
                   Use the same email and password you use to log in at helperplace.com as an
                   employer.
+                  {credentials?.lastScrapeAt != null && (
+                    <>
+                      {" "}
+                      Last scrape: {formatDateTimeSGT(credentials.lastScrapeAt)} SGT.
+                    </>
+                  )}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">

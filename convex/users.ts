@@ -55,6 +55,8 @@ export const store = mutation({
       return existing._id;
     }
 
+    const isFirstUser = (await ctx.db.query("users").first()) === null;
+
     const userId = await ctx.db.insert("users", {
       tokenIdentifier: identity.tokenIdentifier,
       name: identity.name ?? "User",
@@ -63,7 +65,9 @@ export const store = mutation({
       createdAt: Date.now(),
     });
 
-    await migrateLegacyDataToUser(ctx, userId);
+    if (isFirstUser) {
+      await migrateLegacyDataToUser(ctx, userId);
+    }
     return userId;
   },
 });

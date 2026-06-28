@@ -1,8 +1,11 @@
 "use client";
 
 import { Suspense, useMemo, useState, useEffect } from "react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Search, X } from "lucide-react";
+import { KeyRound, Search, X } from "lucide-react";
+import { useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
 import { useInboxCandidates } from "@/hooks/useCandidates";
 import { useLatestOutreachBatch } from "@/hooks/useOutreach";
 import { CandidateTable } from "@/components/CandidateTable";
@@ -32,6 +35,7 @@ function matchesNameSearch(name: string, query: string): boolean {
 function InboxPageContent() {
   const searchParams = useSearchParams();
   const candidates = useInboxCandidates();
+  const credentials = useQuery(api.scraperCredentials.getForCurrentUser);
   const [searchQuery, setSearchQuery] = useState("");
   const [inboxFilter, setInboxFilter] = useState<InboxFilter>("all");
 
@@ -61,6 +65,12 @@ function InboxPageContent() {
 
   const hasSearch = searchQuery.trim().length > 0;
   const hasFilter = inboxFilter !== "all";
+  const hasCredentials = credentials?.hasPassword === true;
+  const showConnectCta =
+    candidates !== undefined &&
+    credentials !== undefined &&
+    candidates.length === 0 &&
+    !hasCredentials;
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8">
@@ -121,12 +131,27 @@ function InboxPageContent() {
       </div>
 
       <ConvexGuard>
-        {candidates === undefined ? (
+        {candidates === undefined || credentials === undefined ? (
           <LoadingState rows={8} />
+        ) : showConnectCta ? (
+          <EmptyState
+            title="Connect HelperPlace to import your applicants"
+            description="Save your HelperPlace employer credentials in settings. After you save, applicants are imported automatically every day at 8:00am Singapore time."
+            icon={<KeyRound className="h-6 w-6" />}
+            action={
+              <Link href="/settings">
+                <Button type="button">Connect HelperPlace</Button>
+              </Link>
+            }
+          />
         ) : candidates.length === 0 ? (
           <EmptyState
-            title="No candidates yet"
-            description="Run a scrape to import profiles from HelperPlace."
+            title="No applicants yet"
+            description={
+              hasCredentials
+                ? "Your first import runs daily at 8:00am Singapore time. New applicants will appear here after the scrape completes."
+                : "Run a scrape to import profiles from HelperPlace."
+            }
           />
         ) : filteredCandidates.length === 0 ? (
           <EmptyState
