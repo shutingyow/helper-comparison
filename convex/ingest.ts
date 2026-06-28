@@ -6,6 +6,7 @@ import {
   DEFAULT_DESIRED_SKILLS,
   DEFAULT_HARD_FILTERS,
   DEFAULT_RANKING_WEIGHTS,
+  defaultTargetStartDate,
 } from "./lib/ranking";
 import { scoreCandidate } from "./lib/candidateScoring";
 import { sortWorkHistoryByRecency } from "./lib/workHistory";
@@ -32,7 +33,7 @@ async function getOrCreatePreferences(
     hardFilters: { ...DEFAULT_HARD_FILTERS },
     rankingWeights: DEFAULT_RANKING_WEIGHTS,
     desiredSkills: DEFAULT_DESIRED_SKILLS,
-    targetStartDate: "2026-10-01",
+    targetStartDate: defaultTargetStartDate(),
   });
 
   const created = await ctx.db.get("preferences", id);

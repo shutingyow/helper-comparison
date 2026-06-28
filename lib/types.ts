@@ -100,6 +100,7 @@ export const FILTER_LABELS: Record<string, string> = {
   reference_letter: "Ref Letter",
   ref_letter: "Ref Letter",
   start_date: "Start Date",
+  start_by_target_date: "Start Date",
   start_by_oct_2026: "Start Date",
   contract_sg: "Contract/SG",
   contract: "Contract/SG",

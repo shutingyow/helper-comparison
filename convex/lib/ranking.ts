@@ -49,10 +49,35 @@ export type CandidateInput = {
 import { sortWorkHistoryByRecency } from "./workHistory";
 const TWO_WEEKS_MS = 14 * 24 * 60 * 60 * 1000;
 
+/** Default target start date for new accounts: first day of the month 3 months from now. */
+export function defaultTargetStartDate(): string {
+  const d = new Date();
+  d.setMonth(d.getMonth() + 3, 1);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  return `${year}-${month}-01`;
+}
+
+export function formatTargetDateLabel(isoDate: string): string | null {
+  if (!isoDate.trim()) return null;
+  const d = new Date(`${isoDate}T00:00:00`);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toLocaleDateString(undefined, { month: "short", year: "numeric" });
+}
+
 function targetDeadlineMs(targetStartDate: string): number {
   const d = new Date(targetStartDate);
   if (Number.isNaN(d.getTime())) {
-    return new Date("2026-10-31T23:59:59Z").getTime();
+    const fallback = new Date(defaultTargetStartDate());
+    return new Date(
+      fallback.getFullYear(),
+      fallback.getMonth() + 1,
+      0,
+      23,
+      59,
+      59,
+      999,
+    ).getTime();
   }
   return new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59, 999).getTime();
 }
@@ -60,14 +85,14 @@ function targetDeadlineMs(targetStartDate: string): number {
 function targetStartMs(targetStartDate: string): number {
   const d = new Date(targetStartDate);
   if (Number.isNaN(d.getTime())) {
-    return new Date("2026-10-01T00:00:00Z").getTime();
+    return new Date(`${defaultTargetStartDate()}T00:00:00`).getTime();
   }
   return d.getTime();
 }
 
 export const DEFAULT_HARD_FILTERS: HardFilters = {
   requireReferenceLetter: true,
-  requireStartByOct2026: true,
+  requireStartByOct2026: false,
   requireFinishedContractOrSingapore: true,
   requireEnglish: true,
   // Opt-in: strict check that baby + child care appear in recent job duties.
@@ -250,7 +275,7 @@ function passesStartByTarget(
 export function evaluateHardFilters(
   candidate: CandidateInput,
   filters: HardFilters,
-  targetStartDate: string = "2026-10-01",
+  targetStartDate: string = defaultTargetStartDate(),
 ): FilterResult[] {
   const results: FilterResult[] = [];
 
@@ -272,7 +297,7 @@ export function evaluateHardFilters(
       targetStartDate,
     );
     results.push({
-      filter: "start_by_oct_2026",
+      filter: "start_by_target_date",
       passed,
       reason,
     });
@@ -346,7 +371,7 @@ export function computeScore(
   candidate: CandidateInput,
   weights: RankingWeights,
   desiredSkills: string[],
-  targetStartDate: string = "2026-10-01",
+  targetStartDate: string = defaultTargetStartDate(),
 ): number {
   let score = 0;
 

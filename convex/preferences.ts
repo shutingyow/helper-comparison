@@ -6,6 +6,7 @@ import {
   DEFAULT_DESIRED_SKILLS,
   DEFAULT_HARD_FILTERS,
   DEFAULT_RANKING_WEIGHTS,
+  defaultTargetStartDate,
   mergeHardFilters,
 } from "./lib/ranking";
 
@@ -74,7 +75,7 @@ export const initialize = mutation({
       hardFilters: { ...DEFAULT_HARD_FILTERS },
       rankingWeights: DEFAULT_RANKING_WEIGHTS,
       desiredSkills: DEFAULT_DESIRED_SKILLS,
-      targetStartDate: "2026-10-01",
+      targetStartDate: defaultTargetStartDate(),
     });
   },
 });
@@ -101,7 +102,7 @@ export const update = mutation({
         hardFilters: { ...DEFAULT_HARD_FILTERS },
         rankingWeights: DEFAULT_RANKING_WEIGHTS,
         desiredSkills: DEFAULT_DESIRED_SKILLS,
-        targetStartDate: "2026-10-01",
+        targetStartDate: defaultTargetStartDate(),
       }));
 
     const updates: Record<string, unknown> = {};
