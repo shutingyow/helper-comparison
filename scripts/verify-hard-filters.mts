@@ -1,5 +1,6 @@
 import {
   evaluateHardFilters,
+  hasAllRequiredTermsInRecentWork,
   mergeHardFilters,
   passesAllHardFilters,
 } from "../convex/lib/ranking";
@@ -45,20 +46,23 @@ const filtersOff = mergeHardFilters({
   requireStartByOct2026: true,
   requireFinishedContractOrSingapore: true,
   requireEnglish: true,
-  requireBabyChildCareInRecentWork: false,
+  requireInRecentWork: false,
+  requiredRecentWorkSkills: [],
 });
 
 const results = evaluateHardFilters(nathali, filtersOff, "2026-10-01");
 const passes = passesAllHardFilters(results);
-const hasBabyFilter = results.some((r) => r.filter === "baby_child_care_recent_work");
+const hasRecentWorkFilter = results.some(
+  (r) => r.filter === "required_in_recent_work",
+);
 
-if (hasBabyFilter) {
-  console.error("FAIL: baby/child care filter evaluated when disabled");
+if (hasRecentWorkFilter) {
+  console.error("FAIL: recent work filter evaluated when disabled");
   process.exit(1);
 }
 
 if (!passes) {
-  console.error("FAIL: Nathali should pass with baby/child care filter off");
+  console.error("FAIL: Nathali should pass with recent work filter off");
   console.error(results);
   process.exit(1);
 }
@@ -68,7 +72,8 @@ const allOff = mergeHardFilters({
   requireStartByOct2026: false,
   requireFinishedContractOrSingapore: false,
   requireEnglish: false,
-  requireBabyChildCareInRecentWork: false,
+  requireInRecentWork: false,
+  requiredRecentWorkSkills: [],
 });
 
 const allOffResults = evaluateHardFilters(nathali, allOff, "2026-10-01");
@@ -77,11 +82,63 @@ if (!passesAllHardFilters(allOffResults) || allOffResults.length !== 0) {
   process.exit(1);
 }
 
-if (mergeHardFilters({ requireBabyChildCareInRecentWork: false }).requireBabyChildCareInRecentWork) {
+if (mergeHardFilters({ requireInRecentWork: false }).requireInRecentWork) {
   console.error("FAIL: mergeHardFilters overwrote explicit false");
   process.exit(1);
 }
 
-console.log("OK: Nathali passes when requireBabyChildCareInRecentWork is off");
+const legacyMigrated = mergeHardFilters({
+  requireBabyChildCareInRecentWork: true,
+});
+if (
+  !legacyMigrated.requireInRecentWork ||
+  legacyMigrated.requiredRecentWorkSkills.join(", ") !== "Baby Care, Child Care"
+) {
+  console.error("FAIL: legacy baby/child filter should migrate to recent work skills");
+  console.error(legacyMigrated);
+  process.exit(1);
+}
+
+const recentWorkOn = mergeHardFilters({
+  requireReferenceLetter: false,
+  requireStartByOct2026: false,
+  requireFinishedContractOrSingapore: false,
+  requireEnglish: false,
+  requireInRecentWork: true,
+  requiredRecentWorkSkills: ["Baby Care", "Child Care"],
+});
+
+if (!hasAllRequiredTermsInRecentWork(nathali.workHistory, ["Baby Care", "Child Care"])) {
+  console.error("FAIL: Nathali should have baby and child care in recent work");
+  process.exit(1);
+}
+
+const recentResults = evaluateHardFilters(nathali, recentWorkOn, "2026-10-01");
+const recentFilter = recentResults.find((r) => r.filter === "required_in_recent_work");
+if (!recentFilter?.passed) {
+  console.error("FAIL: Nathali should pass configurable recent work filter");
+  console.error(recentResults);
+  process.exit(1);
+}
+
+const cookingOnly = mergeHardFilters({
+  requireReferenceLetter: false,
+  requireStartByOct2026: false,
+  requireFinishedContractOrSingapore: false,
+  requireEnglish: false,
+  requireInRecentWork: true,
+  requiredRecentWorkSkills: ["Cooking"],
+});
+
+const cookingResults = evaluateHardFilters(nathali, cookingOnly, "2026-10-01");
+const cookingFilter = cookingResults.find((r) => r.filter === "required_in_recent_work");
+if (!cookingFilter?.passed) {
+  console.error("FAIL: Nathali should pass when only Cooking is required in recent work");
+  process.exit(1);
+}
+
+console.log("OK: Nathali passes when recent work filter is off");
 console.log("OK: mergeHardFilters preserves explicit false");
 console.log("OK: disabled filters are not evaluated");
+console.log("OK: legacy requireBabyChildCareInRecentWork migrates correctly");
+console.log("OK: configurable recent work filter matches duties in top 2 jobs");

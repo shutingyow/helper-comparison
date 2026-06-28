@@ -48,7 +48,8 @@ export interface HardFilters {
   requireStartByOct2026: boolean;
   requireFinishedContractOrSingapore: boolean;
   requireEnglish: boolean;
-  requireBabyChildCareInRecentWork: boolean;
+  requireInRecentWork: boolean;
+  requiredRecentWorkSkills: string[];
 }
 
 export interface RankingWeights {
@@ -106,5 +107,12 @@ export const FILTER_LABELS: Record<string, string> = {
   contract: "Contract/SG",
   finished_contract_or_singapore: "Contract/SG",
   english: "English",
+  required_in_recent_work: "Recent Work Req",
   baby_child_care_recent_work: "Recent Childcare",
 };
+
+export function recentWorkFilterBadgeLabel(skills: string[]): string {
+  if (skills.length === 0) return FILTER_LABELS.required_in_recent_work;
+  if (skills.length <= 2) return skills.join(" + ");
+  return `Recent work (${skills.length})`;
+}

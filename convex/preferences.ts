@@ -15,7 +15,8 @@ const hardFiltersValidator = v.object({
   requireStartByOct2026: v.boolean(),
   requireFinishedContractOrSingapore: v.boolean(),
   requireEnglish: v.boolean(),
-  requireBabyChildCareInRecentWork: v.boolean(),
+  requireInRecentWork: v.boolean(),
+  requiredRecentWorkSkills: v.array(v.string()),
 });
 
 const rankingWeightsValidator = v.object({
@@ -115,8 +116,8 @@ export const update = mutation({
         requireFinishedContractOrSingapore:
           args.hardFilters.requireFinishedContractOrSingapore,
         requireEnglish: args.hardFilters.requireEnglish,
-        requireBabyChildCareInRecentWork:
-          args.hardFilters.requireBabyChildCareInRecentWork,
+        requireInRecentWork: args.hardFilters.requireInRecentWork,
+        requiredRecentWorkSkills: args.hardFilters.requiredRecentWorkSkills,
       };
     }
     if (args.rankingWeights !== undefined) {

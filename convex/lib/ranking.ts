@@ -3,7 +3,13 @@ export type HardFilters = {
   requireStartByOct2026: boolean;
   requireFinishedContractOrSingapore: boolean;
   requireEnglish: boolean;
-  requireBabyChildCareInRecentWork: boolean;
+  requireInRecentWork: boolean;
+  requiredRecentWorkSkills: string[];
+};
+
+/** Legacy field merged at read time when migrating stored preferences. */
+export type StoredHardFilters = Partial<HardFilters> & {
+  requireBabyChildCareInRecentWork?: boolean;
 };
 
 export type RankingWeights = {
@@ -95,15 +101,41 @@ export const DEFAULT_HARD_FILTERS: HardFilters = {
   requireStartByOct2026: false,
   requireFinishedContractOrSingapore: true,
   requireEnglish: true,
-  // Opt-in: strict check that baby + child care appear in recent job duties.
-  requireBabyChildCareInRecentWork: false,
+  requireInRecentWork: false,
+  requiredRecentWorkSkills: [],
 };
+
+export const SUGGESTED_RECENT_WORK_SKILLS = [
+  "Baby Care",
+  "Child Care",
+  "Cooking",
+  "Elderly Care",
+] as const;
+
+const LEGACY_BABY_CHILD_RECENT_WORK_DEFAULTS = ["Baby Care", "Child Care"];
 
 /** Fill only missing keys from defaults. Explicit `false` is preserved. */
 export function mergeHardFilters(
-  stored: Partial<HardFilters> | undefined,
+  stored: StoredHardFilters | undefined,
 ): HardFilters {
   const s = stored ?? {};
+
+  let requireInRecentWork =
+    s.requireInRecentWork ?? DEFAULT_HARD_FILTERS.requireInRecentWork;
+  let requiredRecentWorkSkills =
+    s.requiredRecentWorkSkills ?? DEFAULT_HARD_FILTERS.requiredRecentWorkSkills;
+
+  // Legacy: boolean-only baby/child filter → configurable recent-work requirements.
+  if (
+    s.requireBabyChildCareInRecentWork === true &&
+    s.requireInRecentWork === undefined &&
+    (s.requiredRecentWorkSkills === undefined ||
+      s.requiredRecentWorkSkills.length === 0)
+  ) {
+    requireInRecentWork = true;
+    requiredRecentWorkSkills = [...LEGACY_BABY_CHILD_RECENT_WORK_DEFAULTS];
+  }
+
   return {
     requireReferenceLetter:
       s.requireReferenceLetter ?? DEFAULT_HARD_FILTERS.requireReferenceLetter,
@@ -113,10 +145,15 @@ export function mergeHardFilters(
       s.requireFinishedContractOrSingapore ??
       DEFAULT_HARD_FILTERS.requireFinishedContractOrSingapore,
     requireEnglish: s.requireEnglish ?? DEFAULT_HARD_FILTERS.requireEnglish,
-    requireBabyChildCareInRecentWork:
-      s.requireBabyChildCareInRecentWork ??
-      DEFAULT_HARD_FILTERS.requireBabyChildCareInRecentWork,
+    requireInRecentWork,
+    requiredRecentWorkSkills,
   };
+}
+
+export function recentWorkFilterLabel(skills: string[]): string {
+  if (skills.length === 0) return "Required in recent work";
+  if (skills.length <= 2) return skills.join(" + ");
+  return `Recent work (${skills.length})`;
 }
 
 export const DEFAULT_RANKING_WEIGHTS: RankingWeights = {
@@ -151,9 +188,27 @@ const CHILD_CARE_PATTERNS = [
   /childcare/i,
   /\bchildren\b/i,
   /\bchild\b/i,
+  /\bkids\s*care/i,
   /\bkids\b/i,
   /\btoddler/i,
 ];
+
+const COOKING_PATTERNS = [/cook/i, /cooking/i, /\bmeal/i, /\bfood prep/i];
+
+const ELDERLY_CARE_PATTERNS = [
+  /elderly\s*care/i,
+  /\belderly\b/i,
+  /\belder\b/i,
+  /\bsenior/i,
+];
+
+const TERM_MATCH_PATTERNS: Record<string, RegExp[]> = {
+  "baby care": BABY_CARE_PATTERNS,
+  "child care": CHILD_CARE_PATTERNS,
+  "kids care": CHILD_CARE_PATTERNS,
+  cooking: COOKING_PATTERNS,
+  "elderly care": ELDERLY_CARE_PATTERNS,
+};
 
 function workEntrySearchText(entry: {
   duties?: string;
@@ -206,6 +261,46 @@ export function hasChildCareInRecentWork(
   return getRecentWorkHistory(workHistory).some(hasChildCareInWorkEntry);
 }
 
+function termMatchesWorkEntry(
+  term: string,
+  entry: {
+    duties?: string;
+    title?: string;
+    employer?: string;
+  },
+): boolean {
+  const text = workEntrySearchText(entry);
+  const normalizedTerm = term.toLowerCase().trim();
+  if (!normalizedTerm) return false;
+
+  const patterns = TERM_MATCH_PATTERNS[normalizedTerm];
+  if (patterns) {
+    return textMatchesPatterns(text, patterns);
+  }
+
+  return text.toLowerCase().includes(normalizedTerm);
+}
+
+export function hasRequiredTermInRecentWork(
+  workHistory: CandidateInput["workHistory"],
+  term: string,
+): boolean {
+  return getRecentWorkHistory(workHistory).some((entry) =>
+    termMatchesWorkEntry(term, entry),
+  );
+}
+
+export function hasAllRequiredTermsInRecentWork(
+  workHistory: CandidateInput["workHistory"],
+  terms: string[],
+): boolean {
+  const normalized = terms.map((t) => t.trim()).filter(Boolean);
+  if (normalized.length === 0) return true;
+  return normalized.every((term) =>
+    hasRequiredTermInRecentWork(workHistory, term),
+  );
+}
+
 function skillRequiresWorkVerification(skill: string): boolean {
   return WORK_VERIFIED_SKILLS.some(
     (verified) => verified.toLowerCase() === skill.toLowerCase(),
@@ -217,13 +312,7 @@ function candidateHasSkill(
   skill: string,
 ): boolean {
   if (skillRequiresWorkVerification(skill)) {
-    if (/baby/i.test(skill)) {
-      return hasBabyCareInRecentWork(candidate.workHistory);
-    }
-    if (/child/i.test(skill)) {
-      return hasChildCareInRecentWork(candidate.workHistory);
-    }
-    return false;
+    return hasRequiredTermInRecentWork(candidate.workHistory, skill);
   }
 
   return candidate.skills.some(
@@ -328,35 +417,27 @@ export function evaluateHardFilters(
     });
   }
 
-  if (filters.requireBabyChildCareInRecentWork) {
-    const babyInRecent = hasBabyCareInRecentWork(candidate.workHistory);
-    const childInRecent = hasChildCareInRecentWork(candidate.workHistory);
-    const babyInSkills = candidate.skills.some((s) => /baby\s*care/i.test(s));
-    const childInSkills = candidate.skills.some((s) => /child\s*care/i.test(s));
-    const passed = babyInRecent && childInRecent;
+  if (
+    filters.requireInRecentWork &&
+    filters.requiredRecentWorkSkills.length > 0
+  ) {
+    const required = filters.requiredRecentWorkSkills;
+    const missing = required.filter(
+      (term) => !hasRequiredTermInRecentWork(candidate.workHistory, term),
+    );
+    const passed = missing.length === 0;
     const recentJobs = getRecentWorkHistory(candidate.workHistory)
       .map((job) => job.period ?? "recent job")
       .join(", ");
 
     results.push({
-      filter: "baby_child_care_recent_work",
+      filter: "required_in_recent_work",
       passed,
       reason: passed
-        ? `Baby care and child care in recent work (${recentJobs || "top 2 jobs"})`
-        : [
-            !babyInRecent
-              ? babyInSkills
-                ? "Baby care listed in skills but not in most recent 2 jobs"
-                : "No baby care in most recent 2 jobs"
-              : null,
-            !childInRecent
-              ? childInSkills
-                ? "Child care listed in skills but not in most recent 2 jobs"
-                : "No child care in most recent 2 jobs"
-              : null,
-          ]
-            .filter(Boolean)
-            .join("; "),
+        ? `${required.join(", ")} found in recent work (${recentJobs || "top 2 jobs"})`
+        : `Missing in most recent 2 jobs: ${missing.join(", ")}${
+            recentJobs ? ` (checked: ${recentJobs})` : ""
+          }`,
     });
   }
 
@@ -424,7 +505,7 @@ export function computeScore(
   const filled = completenessFields.filter(Boolean).length;
   if (filled >= 6) score += weights.profileCompleteness;
 
-  return Math.round(score);
+  return Math.round(Math.min(100, score));
 }
 
 const HELPERPLACE_MONTHS: Record<string, number> = {

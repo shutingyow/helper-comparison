@@ -6,21 +6,29 @@ import type { HardFilters, RankingWeights } from "@/lib/types";
 import {
   DEFAULT_HARD_FILTERS,
   DEFAULT_RANKING_WEIGHTS,
+  SUGGESTED_RECENT_WORK_SKILLS,
   defaultTargetStartDate,
   formatTargetDateLabel,
+  recentWorkFilterLabel,
 } from "@/convex/lib/ranking";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { LoadingState } from "@/components/LoadingState";
 import { ConvexGuard } from "@/components/ConvexGuard";
 
 const DEFAULT_WEIGHTS: RankingWeights = DEFAULT_RANKING_WEIGHTS;
 
 const STATIC_HARD_FILTER_FIELDS: Array<{
-  key: keyof HardFilters;
+  key: keyof Pick<
+    HardFilters,
+    | "requireReferenceLetter"
+    | "requireFinishedContractOrSingapore"
+    | "requireEnglish"
+  >;
   label: string;
   description: string;
 }> = [
@@ -38,12 +46,6 @@ const STATIC_HARD_FILTER_FIELDS: Array<{
     key: "requireEnglish",
     label: "English required",
     description: "Must list English as a spoken language",
-  },
-  {
-    key: "requireBabyChildCareInRecentWork",
-    label: "Baby & child care in recent work",
-    description:
-      "Baby care and child care must appear in duties for the most recent or second-most recent job — listing them only under skills is not enough",
   },
 ];
 
@@ -77,6 +79,10 @@ function startDateFilterCopy(targetStartDate: string): {
   };
 }
 
+function normalizeSkillTag(value: string): string {
+  return value.trim().replace(/\s+/g, " ");
+}
+
 export default function PreferencesPage() {
   const prefs = usePreferences();
   const updatePreferences = useUpdatePreferences();
@@ -84,6 +90,7 @@ export default function PreferencesPage() {
   const [rankingWeights, setRankingWeights] = useState<RankingWeights>(DEFAULT_WEIGHTS);
   const [desiredSkills, setDesiredSkills] = useState("");
   const [targetStartDate, setTargetStartDate] = useState("");
+  const [recentWorkInput, setRecentWorkInput] = useState("");
   const [saved, setSaved] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -100,6 +107,14 @@ export default function PreferencesPage() {
     ];
   }, [targetStartDate]);
 
+  const recentWorkFilterActive =
+    hardFilters.requireInRecentWork &&
+    hardFilters.requiredRecentWorkSkills.length > 0;
+
+  const recentWorkFilterDescription = recentWorkFilterActive
+    ? `Each selected item must appear in duties for the most recent or second-most recent job: ${recentWorkFilterLabel(hardFilters.requiredRecentWorkSkills)}`
+    : "Checked against duties in the most recent 2 jobs — not the skills section alone.";
+
   useEffect(() => {
     if (prefs) {
       setHardFilters({
@@ -108,8 +123,8 @@ export default function PreferencesPage() {
         requireFinishedContractOrSingapore:
           prefs.hardFilters.requireFinishedContractOrSingapore,
         requireEnglish: prefs.hardFilters.requireEnglish,
-        requireBabyChildCareInRecentWork:
-          prefs.hardFilters.requireBabyChildCareInRecentWork,
+        requireInRecentWork: prefs.hardFilters.requireInRecentWork,
+        requiredRecentWorkSkills: prefs.hardFilters.requiredRecentWorkSkills,
       });
       setRankingWeights(prefs.rankingWeights);
       setDesiredSkills(prefs.desiredSkills.join(", "));
@@ -117,6 +132,31 @@ export default function PreferencesPage() {
       setSaved(true);
     }
   }, [prefs]);
+
+  function addRecentWorkSkill(raw: string) {
+    const skill = normalizeSkillTag(raw);
+    if (!skill) return;
+    setHardFilters((f) => {
+      const exists = f.requiredRecentWorkSkills.some(
+        (s) => s.toLowerCase() === skill.toLowerCase(),
+      );
+      if (exists) return f;
+      return {
+        ...f,
+        requiredRecentWorkSkills: [...f.requiredRecentWorkSkills, skill],
+      };
+    });
+    setRecentWorkInput("");
+    markDirty();
+  }
+
+  function removeRecentWorkSkill(skill: string) {
+    setHardFilters((f) => ({
+      ...f,
+      requiredRecentWorkSkills: f.requiredRecentWorkSkills.filter((s) => s !== skill),
+    }));
+    markDirty();
+  }
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
@@ -218,6 +258,106 @@ export default function PreferencesPage() {
                     <p className="mt-1 pl-6 text-xs text-stone-500">{description}</p>
                   </div>
                 ))}
+
+                <div className="rounded-lg border border-stone-100 p-4">
+                  <Checkbox
+                    id="requireInRecentWork"
+                    label="Must appear in recent work"
+                    checked={hardFilters.requireInRecentWork}
+                    onChange={(e) => {
+                      setHardFilters((f) => ({
+                        ...f,
+                        requireInRecentWork: e.target.checked,
+                      }));
+                      markDirty();
+                    }}
+                  />
+                  <p className="mt-1 pl-6 text-xs text-stone-500">
+                    {recentWorkFilterDescription}
+                  </p>
+
+                  {hardFilters.requireInRecentWork ? (
+                    <div className="mt-4 space-y-3 pl-6">
+                      <div className="flex flex-wrap gap-2">
+                        {SUGGESTED_RECENT_WORK_SKILLS.map((skill) => {
+                          const selected = hardFilters.requiredRecentWorkSkills.some(
+                            (s) => s.toLowerCase() === skill.toLowerCase(),
+                          );
+                          return (
+                            <Button
+                              key={skill}
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className={
+                                selected
+                                  ? "border-stone-900 bg-stone-900 text-white hover:bg-stone-800"
+                                  : undefined
+                              }
+                              onClick={() => {
+                                if (selected) {
+                                  removeRecentWorkSkill(
+                                    hardFilters.requiredRecentWorkSkills.find(
+                                      (s) => s.toLowerCase() === skill.toLowerCase(),
+                                    ) ?? skill,
+                                  );
+                                } else {
+                                  addRecentWorkSkill(skill);
+                                }
+                              }}
+                            >
+                              {skill}
+                            </Button>
+                          );
+                        })}
+                      </div>
+
+                      {hardFilters.requiredRecentWorkSkills.length > 0 ? (
+                        <div className="flex flex-wrap gap-2">
+                          {hardFilters.requiredRecentWorkSkills.map((skill) => (
+                            <Badge key={skill} variant="outline" className="gap-1 pr-1">
+                              {skill}
+                              <button
+                                type="button"
+                                className="ml-1 rounded-full px-1 text-stone-500 hover:bg-stone-100 hover:text-stone-800"
+                                aria-label={`Remove ${skill}`}
+                                onClick={() => removeRecentWorkSkill(skill)}
+                              >
+                                ×
+                              </button>
+                            </Badge>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-xs text-amber-700">
+                          Add at least one requirement — the filter applies only when
+                          items are selected.
+                        </p>
+                      )}
+
+                      <div className="flex gap-2">
+                        <Input
+                          value={recentWorkInput}
+                          onChange={(e) => setRecentWorkInput(e.target.value)}
+                          placeholder="Add custom requirement, e.g. Pet Care"
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              addRecentWorkSkill(recentWorkInput);
+                            }
+                          }}
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => addRecentWorkSkill(recentWorkInput)}
+                        >
+                          Add
+                        </Button>
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
               </CardContent>
             </Card>
 
