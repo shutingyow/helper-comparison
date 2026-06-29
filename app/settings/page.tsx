@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
@@ -65,6 +66,14 @@ export default function SettingsPage() {
         <p className="mt-1 text-sm text-stone-500">
           Connect your HelperPlace employer account so the scraper can import applicants.
           Your password is encrypted before storage and never shown again.
+        </p>
+        <p className="mt-2 text-sm">
+          <Link
+            href="/guide"
+            className="font-medium text-coral-700 underline decoration-coral-200 underline-offset-2 hover:text-coral-800"
+          >
+            Need help? Read the setup guide
+          </Link>
         </p>
       </header>
 

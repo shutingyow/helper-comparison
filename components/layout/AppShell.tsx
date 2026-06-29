@@ -160,7 +160,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     pathname.startsWith("/sign-in") ||
     pathname.startsWith("/sign-up") ||
     pathname.startsWith("/login") ||
-    pathname.startsWith("/auth/complete");
+    pathname.startsWith("/auth/complete") ||
+    pathname.startsWith("/guide");
 
   if (isAuthPage) {
     return <>{children}</>;
