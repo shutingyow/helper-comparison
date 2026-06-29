@@ -117,6 +117,18 @@ export function MobileNav() {
               </Link>
             );
           })}
+          <div className="mt-1 border-t border-stone-100 pt-1">
+            <SignOutButton>
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-stone-600 hover:bg-stone-50 hover:text-stone-900"
+              >
+                <LogOut className="h-4 w-4" />
+                Sign out
+              </button>
+            </SignOutButton>
+          </div>
         </nav>
       )}
 
