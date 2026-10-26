@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ExternalLink, ArrowLeft } from "lucide-react";
+import { ExternalLink, ArrowLeft, MessageCircle } from "lucide-react";
 import { useCandidate, useUpdateStatus } from "@/hooks/useCandidates";
 import { StatusSelect } from "@/components/StatusSelect";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -16,7 +16,12 @@ import { ConvexGuard } from "@/components/ConvexGuard";
 import type { Candidate, CandidateStatus } from "@/lib/types";
 import { formatDate } from "@/lib/utils";
 import { sortWorkHistoryByRecency } from "@/lib/workHistory";
-import { getCandidatePhone } from "@/lib/whatsapp";
+import {
+  buildWhatsAppUrl,
+  getCandidatePhone,
+  getCandidatePhoneE164,
+} from "@/lib/whatsapp";
+import { getScoreWhySummary } from "@/lib/scoreHints";
 import { PhoneBadge } from "@/components/PhoneBadge";
 import { WhatsAppComposerSingle } from "@/components/WhatsAppComposer";
 import { OutreachHistory } from "@/components/OutreachHistory";
@@ -80,91 +85,101 @@ function CandidateProfile({
   statusSaving: boolean;
 }) {
   const phone = getCandidatePhone(candidate);
+  const e164 = getCandidatePhoneE164(candidate);
+  const waUrl = buildWhatsAppUrl(candidate, "interview_invite");
   const outreachHistory = useOutreachHistory(candidate._id);
   const workHistory = sortWorkHistoryByRecency(candidate.workHistory);
+  const whyRanked = getScoreWhySummary(candidate);
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <div className="flex flex-wrap items-center gap-3">
-            <h1 className="text-2xl font-bold text-stone-900">{candidate.name}</h1>
-            <ScoreBadge candidate={candidate} size="lg" />
-            <StatusBadge status={candidate.status} />
-          </div>
-          <p className="mt-1 text-sm text-stone-500">
-            {[candidate.nationality, candidate.gender, candidate.age && `${candidate.age} yrs`]
-              .filter(Boolean)
-              .join(" · ")}
-          </p>
-          {!candidate.passesHardFilters && (
-            <FilterBadges filters={candidate.filterResults} className="mt-3" />
-          )}
-        </div>
-        <div className="flex flex-col gap-2 sm:items-end">
-          <StatusSelect
-            value={candidate.status}
-            onChange={onStatusChange}
-            disabled={statusSaving}
-            className="w-full sm:w-44"
-          />
-          <a
-            href={candidate.profileUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Button variant="outline" size="sm">
-              <ExternalLink className="h-4 w-4" />
-              View on HelperPlace
-            </Button>
-          </a>
-        </div>
-      </div>
-
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Availability</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2 text-sm">
-            <Row label="Available from" value={candidate.availableFrom ?? "—"} />
-            <Row label="Contract" value={candidate.contractStatus ?? "—"} />
-            <Row label="Location" value={candidate.presentLocation ?? "—"} />
-            <Row
-              label="Experience"
-              value={
-                candidate.yearsExperience != null
-                  ? `${candidate.yearsExperience} years`
-                  : "—"
-              }
-            />
-            {candidate.salaryExpectation && (
-              <Row label="Salary ask" value={candidate.salaryExpectation} />
-            )}
-            {candidate.dayOff && <Row label="Day off" value={candidate.dayOff} />}
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Contact</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2 text-sm">
-            <div className="flex items-center justify-between gap-4">
-              <span className="text-stone-500">Phone</span>
-              <div className="flex items-center gap-2">
-                <span className="font-medium text-stone-800">{phone ?? "—"}</span>
-                <PhoneBadge candidate={candidate} />
-              </div>
+      <header className="rounded-xl border border-stone-200/80 bg-white p-4 shadow-sm sm:p-5">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2.5">
+              <h1 className="text-2xl font-bold text-stone-900">{candidate.name}</h1>
+              <ScoreBadge candidate={candidate} size="lg" />
+              <StatusBadge status={candidate.status} />
             </div>
-            <Row label="Ref letters" value={String(candidate.referenceLetterCount)} />
-            <Row label="First seen" value={formatDate(candidate.firstSeenAt)} />
-            <Row label="Last scraped" value={formatDate(candidate.scrapedAt)} />
-            {candidate.messagedAt && (
-              <Row label="Messaged" value={formatDate(candidate.messagedAt)} />
+            <p className="mt-1 text-sm text-stone-500">
+              {[candidate.nationality, candidate.gender, candidate.age && `${candidate.age} yrs`]
+                .filter(Boolean)
+                .join(" · ")}
+            </p>
+            <p className="mt-2 text-sm text-stone-600">
+              <span className="font-medium text-stone-700">Why ranked: </span>
+              {whyRanked}
+            </p>
+            {!candidate.passesHardFilters && (
+              <div className="mt-3">
+                <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-rose-700">
+                  Hard filter failures
+                </p>
+                <FilterBadges filters={candidate.filterResults} />
+              </div>
             )}
-          </CardContent>
-        </Card>
-      </div>
+          </div>
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:items-end">
+            {waUrl && e164 ? (
+              <a href={waUrl} target="_blank" rel="noopener noreferrer">
+                <Button variant="whatsapp" className="w-full sm:w-auto">
+                  <MessageCircle className="h-4 w-4" />
+                  Message on WhatsApp
+                </Button>
+              </a>
+            ) : (
+              <p className="text-sm text-stone-500">No valid WhatsApp phone</p>
+            )}
+            <StatusSelect
+              value={candidate.status}
+              onChange={onStatusChange}
+              disabled={statusSaving}
+              className="w-full sm:w-44"
+            />
+            <a
+              href={candidate.profileUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Button variant="outline" size="sm" className="w-full sm:w-auto">
+                <ExternalLink className="h-4 w-4" />
+                View on HelperPlace
+              </Button>
+            </a>
+          </div>
+        </div>
+      </header>
+
+      <section className="grid gap-x-8 gap-y-3 rounded-xl border border-stone-200/80 bg-white px-4 py-4 text-sm sm:grid-cols-2 sm:px-5">
+        <Row label="Available from" value={candidate.availableFrom ?? "—"} />
+        <Row label="Contract" value={candidate.contractStatus ?? "—"} />
+        <Row label="Location" value={candidate.presentLocation ?? "—"} />
+        <Row
+          label="Experience"
+          value={
+            candidate.yearsExperience != null
+              ? `${candidate.yearsExperience} years`
+              : "—"
+          }
+        />
+        {candidate.salaryExpectation && (
+          <Row label="Salary ask" value={candidate.salaryExpectation} />
+        )}
+        {candidate.dayOff && <Row label="Day off" value={candidate.dayOff} />}
+        <div className="flex items-center justify-between gap-4">
+          <span className="text-stone-500">Phone</span>
+          <div className="flex items-center gap-2">
+            <span className="font-medium text-stone-800">{phone ?? "—"}</span>
+            <PhoneBadge candidate={candidate} />
+          </div>
+        </div>
+        <Row label="Ref letters" value={String(candidate.referenceLetterCount)} />
+        <Row label="First seen" value={formatDate(candidate.firstSeenAt)} />
+        <Row label="Last scraped" value={formatDate(candidate.scrapedAt)} />
+        {candidate.messagedAt && (
+          <Row label="Messaged" value={formatDate(candidate.messagedAt)} />
+        )}
+      </section>
 
       {candidate.aboutMe && (
         <Card>
@@ -212,72 +227,65 @@ function CandidateProfile({
         </Card>
       )}
 
-      {candidate.skills.length > 0 && (
+      {(candidate.skills.length > 0 ||
+        candidate.languages.length > 0 ||
+        (candidate.personalityTraits?.length ?? 0) > 0 ||
+        (candidate.cookingSkills?.length ?? 0) > 0 ||
+        candidate.education) && (
         <Card>
           <CardHeader>
-            <CardTitle>Skills</CardTitle>
+            <CardTitle>Skills &amp; background</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="flex flex-wrap gap-2">
-              {candidate.skills.map((skill) => (
-                <span
-                  key={skill}
-                  className="rounded-full bg-stone-100 px-3 py-1 text-xs font-medium text-stone-700"
-                >
-                  {skill}
-                </span>
-              ))}
-            </div>
+          <CardContent className="space-y-4">
+            {candidate.skills.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {candidate.skills.map((skill) => (
+                  <span
+                    key={skill}
+                    className="rounded-full bg-stone-100 px-3 py-1 text-xs font-medium text-stone-700"
+                  >
+                    {skill}
+                  </span>
+                ))}
+              </div>
+            )}
             {(candidate.cookingSkills?.length ?? 0) > 0 && (
-              <div className="mt-3">
+              <div>
                 <p className="text-xs font-medium text-stone-500">Cooking</p>
                 <p className="mt-1 text-sm text-stone-700">
                   {candidate.cookingSkills!.join(", ")}
                 </p>
               </div>
             )}
-          </CardContent>
-        </Card>
-      )}
-
-      {(candidate.personalityTraits?.length ?? 0) > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Personality</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-wrap gap-2">
-              {candidate.personalityTraits!.map((trait) => (
-                <span
-                  key={trait}
-                  className="rounded-full border border-stone-200 px-3 py-1 text-xs text-stone-600"
-                >
-                  {trait}
-                </span>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {candidate.languages.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Languages</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-stone-700">{candidate.languages.join(", ")}</p>
-          </CardContent>
-        </Card>
-      )}
-
-      {candidate.education && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Education</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-stone-700">{candidate.education}</p>
+            {candidate.languages.length > 0 && (
+              <div>
+                <p className="text-xs font-medium text-stone-500">Languages</p>
+                <p className="mt-1 text-sm text-stone-700">
+                  {candidate.languages.join(", ")}
+                </p>
+              </div>
+            )}
+            {(candidate.personalityTraits?.length ?? 0) > 0 && (
+              <div>
+                <p className="mb-2 text-xs font-medium text-stone-500">Personality</p>
+                <div className="flex flex-wrap gap-2">
+                  {candidate.personalityTraits!.map((trait) => (
+                    <span
+                      key={trait}
+                      className="rounded-full border border-stone-200 px-3 py-1 text-xs text-stone-600"
+                    >
+                      {trait}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+            {candidate.education && (
+              <div>
+                <p className="text-xs font-medium text-stone-500">Education</p>
+                <p className="mt-1 text-sm text-stone-700">{candidate.education}</p>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}

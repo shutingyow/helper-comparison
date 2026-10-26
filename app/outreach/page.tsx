@@ -1,7 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ChevronRight, MessageCircle } from "lucide-react";
+import Link from "next/link";
+import { ChevronRight, KeyRound, MessageCircle } from "lucide-react";
+import { useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
 import { EmptyState } from "@/components/EmptyState";
 import { LoadingState } from "@/components/LoadingState";
 import {
@@ -13,8 +16,9 @@ import {
 import { WhatsAppComposer } from "@/components/WhatsAppComposer";
 import { ConvexGuard } from "@/components/ConvexGuard";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
-import { useOutreachCandidates } from "@/hooks/useCandidates";
+import { useInboxCandidates, useOutreachCandidates } from "@/hooks/useCandidates";
 import {
   MESSAGE_TEMPLATES,
   TEMPLATE_OPTIONS,
@@ -67,6 +71,8 @@ export default function OutreachPage() {
   }, [pipelineFilter]);
 
   const candidates = useOutreachCandidates(queryArgs);
+  const allInbox = useInboxCandidates();
+  const credentials = useQuery(api.scraperCredentials.getForCurrentUser);
 
   const selectedCandidates = useMemo(() => {
     if (!candidates) return [];
@@ -100,8 +106,21 @@ export default function OutreachPage() {
       </div>
 
       <ConvexGuard>
-        {candidates === undefined ? (
+        {candidates === undefined ||
+        allInbox === undefined ||
+        credentials === undefined ? (
           <LoadingState rows={6} />
+        ) : allInbox.length === 0 && credentials?.hasPassword !== true ? (
+          <EmptyState
+            title="Connect HelperPlace to import your applicants"
+            description="Save your HelperPlace employer credentials in settings. After you save, applicants are imported automatically every day at 8:00am Singapore time."
+            icon={<KeyRound className="h-6 w-6" />}
+            action={
+              <Link href="/settings">
+                <Button type="button">Connect HelperPlace</Button>
+              </Link>
+            }
+          />
         ) : (
           <div className="space-y-6">
             <Card>
@@ -194,8 +213,27 @@ export default function OutreachPage() {
 
                 {candidates.length === 0 ? (
                   <EmptyState
-                    title="No candidates in this pipeline"
-                    description="Shortlist candidates from the inbox to start outreach."
+                    title={
+                      allInbox.length === 0
+                        ? "No applicants yet"
+                        : "No candidates in this pipeline"
+                    }
+                    description={
+                      allInbox.length === 0
+                        ? credentials?.hasPassword
+                          ? "Your first import runs daily at 8:00am Singapore time. Shortlist people from the inbox after they appear."
+                          : "Connect HelperPlace or run a scrape, then shortlist candidates from the inbox."
+                        : "Shortlist candidates from the inbox to start outreach."
+                    }
+                    action={
+                      allInbox.length > 0 ? (
+                        <Link href="/inbox">
+                          <Button type="button" variant="outline">
+                            Open inbox
+                          </Button>
+                        </Link>
+                      ) : undefined
+                    }
                   />
                 ) : (
                   <OutreachCandidateList

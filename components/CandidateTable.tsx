@@ -5,9 +5,9 @@ import { useMemo, useState } from "react";
 import { CandidateCard } from "@/components/CandidateCard";
 import { FilterBadges } from "@/components/FilterBadges";
 import { ScoreBadge } from "@/components/ScoreBadge";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/StatusBadge";
 import { InterviewBadge } from "@/components/InterviewBadge";
-import { STATUS_LABELS, type Candidate } from "@/lib/types";
+import type { Candidate } from "@/lib/types";
 import { formatDate } from "@/lib/utils";
 
 type SortField = "score" | "firstSeenAt" | "availableFrom";
@@ -80,17 +80,24 @@ export function CandidateTable({
 
   if (candidates.length === 0) {
     return (
-      <div className="rounded-xl border border-dashed border-zinc-300 bg-zinc-50 p-10 text-center text-sm text-zinc-600">
+      <div className="rounded-xl border border-dashed border-stone-300 bg-stone-50 p-10 text-center text-sm text-stone-600">
         No candidates yet. Run the scraper or wait for the daily sync.
       </div>
     );
   }
 
+  const sortHint =
+    sortField === "score"
+      ? `Sorted by score (${sortOrder === "desc" ? "highest first" : "lowest first"})`
+      : sortField === "firstSeenAt"
+        ? `Sorted by first seen (${sortOrder === "desc" ? "newest first" : "oldest first"})`
+        : `Sorted by start date (${sortOrder === "desc" ? "Z–A" : "A–Z"})`;
+
   const headerBtn = (field: SortField, label: string) => (
     <button
       type="button"
       onClick={() => handleSort(field)}
-      className="font-medium text-zinc-700 hover:text-zinc-900"
+      className="font-medium text-stone-700 hover:text-stone-900"
     >
       {label}
       {sortField === field ? (sortOrder === "asc" ? " ↑" : " ↓") : ""}
@@ -99,84 +106,85 @@ export function CandidateTable({
 
   return (
     <>
-    <div className="hidden overflow-x-auto rounded-xl border border-zinc-200 bg-white shadow-sm md:block">
-      <table className="min-w-full text-sm">
-        <thead className="border-b border-zinc-200 bg-zinc-50 text-left">
-          <tr>
-            {isSelectable && <th className="w-10 px-3 py-3" />}
-            <th className="px-4 py-3">{headerBtn("score", "Score")}</th>
-            <th className="px-4 py-3">Name</th>
-            <th className="px-4 py-3">Details</th>
-            {showFilters && <th className="px-4 py-3">Filters</th>}
-            <th className="px-4 py-3">Status</th>
-            <th className="px-4 py-3">{headerBtn("availableFrom", "Start")}</th>
-            <th className="px-4 py-3">{headerBtn("firstSeenAt", "Seen")}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {sorted.map((c) => (
-            <tr key={c._id} className="border-b border-zinc-100 last:border-0">
-              {isSelectable && (
-                <td className="px-3 py-3">
-                  <input
-                    type="checkbox"
-                    checked={selection.has(c._id)}
-                    onChange={() => toggleSelect(c._id)}
-                  />
-                </td>
-              )}
-              <td className="px-4 py-3">
-                <ScoreBadge score={c.score} />
-              </td>
-              <td className="px-4 py-3">
-                <Link
-                  href={`/candidates/${c._id}`}
-                  className="font-medium text-teal-800 hover:underline"
-                >
-                  {c.name}
-                </Link>
-                <p className="text-xs text-zinc-500">
-                  {c.age ? `${c.age}yr` : "—"}
-                  {c.nationality ? ` · ${c.nationality}` : ""}
-                </p>
-              </td>
-              <td className="px-4 py-3 text-zinc-600">
-                <p>{c.yearsExperience ?? "—"} yrs exp</p>
-                <p className="text-xs">{c.contractStatus ?? "—"}</p>
-                <p className="text-xs">{c.presentLocation ?? "—"}</p>
-              </td>
-              {showFilters && (
-                <td className="px-4 py-3">
-                  <FilterBadges filters={c.filterResults} />
-                </td>
-              )}
-              <td className="px-4 py-3">
-                <div className="flex flex-wrap items-center gap-2">
-                  <Badge variant={c.status}>{STATUS_LABELS[c.status]}</Badge>
-                  <InterviewBadge candidate={c} />
-                </div>
-              </td>
-              <td className="px-4 py-3 text-zinc-600">{c.availableFrom ?? "—"}</td>
-              <td className="px-4 py-3 text-zinc-600">
-                {formatDate(c.firstSeenAt)}
-              </td>
+      <div className="hidden overflow-x-auto rounded-xl border border-stone-200 bg-white shadow-sm md:block">
+        <table className="min-w-full text-sm">
+          <thead className="border-b border-stone-200 bg-stone-50 text-left">
+            <tr>
+              {isSelectable && <th className="w-10 px-3 py-3" />}
+              <th className="px-4 py-3">{headerBtn("score", "Score")}</th>
+              <th className="px-4 py-3">Name</th>
+              <th className="px-4 py-3">Details</th>
+              {showFilters && <th className="px-4 py-3">Filters</th>}
+              <th className="px-4 py-3">Status</th>
+              <th className="px-4 py-3">{headerBtn("availableFrom", "Start")}</th>
+              <th className="px-4 py-3">{headerBtn("firstSeenAt", "Seen")}</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+          </thead>
+          <tbody>
+            {sorted.map((c) => (
+              <tr key={c._id} className="border-b border-stone-100 last:border-0">
+                {isSelectable && (
+                  <td className="px-3 py-3">
+                    <input
+                      type="checkbox"
+                      checked={selection.has(c._id)}
+                      onChange={() => toggleSelect(c._id)}
+                    />
+                  </td>
+                )}
+                <td className="px-4 py-3">
+                  <ScoreBadge score={c.score} candidate={c} />
+                </td>
+                <td className="px-4 py-3">
+                  <Link
+                    href={`/candidates/${c._id}`}
+                    className="font-medium text-teal-800 hover:underline"
+                  >
+                    {c.name}
+                  </Link>
+                  <p className="text-xs text-stone-500">
+                    {c.age ? `${c.age}yr` : "—"}
+                    {c.nationality ? ` · ${c.nationality}` : ""}
+                  </p>
+                </td>
+                <td className="px-4 py-3 text-stone-600">
+                  <p>{c.yearsExperience ?? "—"} yrs exp</p>
+                  <p className="text-xs">{c.contractStatus ?? "—"}</p>
+                  <p className="text-xs">{c.presentLocation ?? "—"}</p>
+                </td>
+                {showFilters && (
+                  <td className="px-4 py-3">
+                    <FilterBadges filters={c.filterResults} />
+                  </td>
+                )}
+                <td className="px-4 py-3">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <StatusBadge status={c.status} />
+                    <InterviewBadge candidate={c} />
+                  </div>
+                </td>
+                <td className="px-4 py-3 text-stone-600">{c.availableFrom ?? "—"}</td>
+                <td className="px-4 py-3 text-stone-600">
+                  {formatDate(c.firstSeenAt)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
-    <div className="space-y-3 md:hidden">
-      {sorted.map((c) => (
-        <CandidateCard
-          key={c._id}
-          candidate={c}
-          selectable={isSelectable}
-          selected={selection.has(c._id)}
-          onSelect={() => toggleSelect(c._id)}
-        />
-      ))}
-    </div>
+      <div className="space-y-3 md:hidden">
+        <p className="text-xs text-stone-500">{sortHint}</p>
+        {sorted.map((c) => (
+          <CandidateCard
+            key={c._id}
+            candidate={c}
+            selectable={isSelectable}
+            selected={selection.has(c._id)}
+            onSelect={() => toggleSelect(c._id)}
+          />
+        ))}
+      </div>
     </>
   );
 }
