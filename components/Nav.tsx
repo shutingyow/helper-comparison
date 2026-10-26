@@ -21,10 +21,10 @@ export function Nav() {
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
         <div>
           <p className="text-xs font-medium uppercase tracking-wide text-teal-700">
-            Helper Comparison
+            Helper Hub
           </p>
           <h1 className="text-lg font-semibold text-zinc-900">
-            Singapore Helper Hiring
+            Application manager
           </h1>
         </div>
         <nav className="flex flex-wrap gap-1">

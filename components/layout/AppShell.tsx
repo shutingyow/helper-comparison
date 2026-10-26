@@ -156,14 +156,15 @@ export function MobileNav() {
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const isAuthPage =
+  const isPublicPage =
+    pathname === "/" ||
     pathname.startsWith("/sign-in") ||
     pathname.startsWith("/sign-up") ||
     pathname.startsWith("/login") ||
     pathname.startsWith("/auth/complete") ||
     pathname.startsWith("/guide");
 
-  if (isAuthPage) {
+  if (isPublicPage) {
     return <>{children}</>;
   }
 

@@ -1,4 +1,4 @@
-# Helper Comparison — Beta Tester Guide
+# Helper Hub — Beta Tester Guide
 
 Thanks for helping us test! This guide walks you through setting up and using the app. No technical background needed.
 
@@ -8,7 +8,7 @@ Thanks for helping us test! This guide walks you through setting up and using th
 
 ## 1. What this app does
 
-Helper Comparison (shown in the app as **Helper Hub**) pulls applicants from your HelperPlace employer account, scores and ranks them against your hiring preferences, and gives you one place to review profiles, message candidates on WhatsApp, schedule interviews, and track your pipeline. It does not apply to jobs or message anyone automatically — you stay in control of every outreach and decision.
+**Helper Hub** pulls applicants from your HelperPlace employer account, scores and ranks them against your hiring preferences, and gives you one place to review profiles, message candidates on WhatsApp, schedule interviews, and track your pipeline. It does not apply to jobs or message anyone automatically — you stay in control of every outreach and decision.
 
 ---
 
@@ -190,7 +190,7 @@ Other useful statuses: **Shortlisted**, **Messaged**, **Interviewing**, **Hired*
 
 ## 7. What NOT to share
 
-- **Do not share your HelperPlace password** with anyone — not even other testers. Each person should use their **own** HelperPlace employer account and their **own** Helper Comparison login.
+- **Do not share your HelperPlace password** with anyone — not even other testers. Each person should use their **own** HelperPlace employer account and their **own** Helper Hub login.
 - **Do not share** links to your private candidate notes or screenshots with identifying helper details outside your hiring process.
 - If you stop testing, you can remove saved credentials from the HelperPlace page (contact admin if you want your account data deleted).
 

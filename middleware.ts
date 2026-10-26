@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 const isPublicRoute = createRouteMatcher([
+  "/",
   "/sign-in(.*)",
   "/sign-up(.*)",
   "/login(.*)",
@@ -20,11 +21,17 @@ function isClerkConfigured(): boolean {
 
 const clerkAuthMiddleware = clerkMiddleware(
   async (auth, request) => {
+    const { userId } = await auth();
+
+    // Signed-in users hitting the marketing homepage go straight to the app.
+    if (request.nextUrl.pathname === "/" && userId) {
+      return NextResponse.redirect(new URL("/inbox", request.url));
+    }
+
     if (isPublicRoute(request)) {
       return;
     }
 
-    const { userId } = await auth();
     if (!userId) {
       const signIn = new URL("/sign-in", request.url);
       signIn.searchParams.set("redirect_url", request.url);

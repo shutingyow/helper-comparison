@@ -131,11 +131,11 @@ export function BetaTesterGuideContent() {
 
       <Section id="what-it-does" title="1. What this app does">
         <p>
-          Helper Comparison (shown in the app as <strong>Helper Hub</strong>) pulls applicants from
-          your HelperPlace employer account, scores and ranks them against your hiring preferences,
-          and gives you one place to review profiles, message candidates on WhatsApp, schedule
-          interviews, and track your pipeline. It does not apply to jobs or message anyone
-          automatically — you stay in control of every outreach and decision.
+          <strong>Helper Hub</strong> pulls applicants from your HelperPlace employer account, scores
+          and ranks them against your hiring preferences, and gives you one place to review profiles,
+          message candidates on WhatsApp, schedule interviews, and track your pipeline. It does not
+          apply to jobs or message anyone automatically — you stay in control of every outreach and
+          decision.
         </p>
       </Section>
 
@@ -458,7 +458,7 @@ export function BetaTesterGuideContent() {
           <li>
             <strong>Do not share your HelperPlace password</strong> with anyone — not even other
             testers. Each person should use their <strong>own</strong> HelperPlace employer account
-            and their <strong>own</strong> Helper Comparison login.
+            and their <strong>own</strong> Helper Hub login.
           </li>
           <li>
             <strong>Do not share</strong> links to your private candidate notes or screenshots with
