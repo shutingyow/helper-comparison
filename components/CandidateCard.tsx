@@ -32,7 +32,7 @@ export function CandidateCard({
     <div
       className={cn(
         "rounded-xl border border-stone-200/80 bg-white p-4 shadow-sm",
-        isShortlisted && "border-l-4 border-l-teal-500 bg-teal-50/40",
+        isShortlisted && "border-l-[5px] border-l-amber-500 bg-amber-50/70",
         className,
       )}
     >
@@ -49,21 +49,22 @@ export function CandidateCard({
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
             <div>
-              <Link
-                href={`/candidates/${candidate._id}`}
-                className="font-semibold text-stone-900 hover:text-coral-700"
-              >
-                {candidate.name}
+              <div className="flex flex-wrap items-center gap-1.5">
+                <Link
+                  href={`/candidates/${candidate._id}`}
+                  className="font-semibold text-stone-900 hover:text-coral-700"
+                >
+                  {candidate.name}
+                </Link>
                 {isNew && (
                   <span
-                    className="ml-0.5 font-normal text-stone-400"
+                    className="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-coral-800 bg-coral-100 ring-1 ring-inset ring-coral-500/25"
                     title="New applicant"
-                    aria-label="New applicant"
                   >
-                    *
+                    New
                   </span>
                 )}
-              </Link>
+              </div>
               {!compact && (
                 <p className="text-xs text-stone-500">
                   {[candidate.nationality, candidate.yearsExperience != null && `${candidate.yearsExperience} yrs exp`]

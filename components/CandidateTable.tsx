@@ -125,9 +125,9 @@ export function CandidateTable({
               <tr
                 key={c._id}
                 className={cn(
-                  "border-b border-l-4 border-stone-100 last:border-b-0",
+                  "border-b border-l-[5px] border-stone-100 last:border-b-0",
                   c.status === "shortlisted"
-                    ? "border-l-teal-500 bg-teal-50/40"
+                    ? "border-l-amber-500 bg-amber-50/70"
                     : "border-l-transparent",
                 )}
               >
@@ -144,21 +144,22 @@ export function CandidateTable({
                   <ScoreBadge score={c.score} candidate={c} />
                 </td>
                 <td className="px-4 py-3">
-                  <Link
-                    href={`/candidates/${c._id}`}
-                    className="font-medium text-teal-800 hover:underline"
-                  >
-                    {c.name}
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <Link
+                      href={`/candidates/${c._id}`}
+                      className="font-medium text-teal-800 hover:underline"
+                    >
+                      {c.name}
+                    </Link>
                     {c.status === "new" && (
                       <span
-                        className="ml-0.5 font-normal text-stone-400"
+                        className="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-coral-800 bg-coral-100 ring-1 ring-inset ring-coral-500/25"
                         title="New applicant"
-                        aria-label="New applicant"
                       >
-                        *
+                        New
                       </span>
                     )}
-                  </Link>
+                  </div>
                   <p className="text-xs text-stone-500">
                     {c.age ? `${c.age}yr` : "—"}
                     {c.nationality ? ` · ${c.nationality}` : ""}
