@@ -25,10 +25,14 @@ export function CandidateCard({
   compact,
   className,
 }: CandidateCardProps) {
+  const isShortlisted = candidate.status === "shortlisted";
+  const isNew = candidate.status === "new";
+
   return (
     <div
       className={cn(
         "rounded-xl border border-stone-200/80 bg-white p-4 shadow-sm",
+        isShortlisted && "border-l-4 border-l-teal-500 bg-teal-50/40",
         className,
       )}
     >
@@ -50,6 +54,15 @@ export function CandidateCard({
                 className="font-semibold text-stone-900 hover:text-coral-700"
               >
                 {candidate.name}
+                {isNew && (
+                  <span
+                    className="ml-0.5 font-normal text-stone-400"
+                    title="New applicant"
+                    aria-label="New applicant"
+                  >
+                    *
+                  </span>
+                )}
               </Link>
               {!compact && (
                 <p className="text-xs text-stone-500">

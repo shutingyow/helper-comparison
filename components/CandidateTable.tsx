@@ -8,7 +8,7 @@ import { ScoreBadge } from "@/components/ScoreBadge";
 import { StatusBadge } from "@/components/StatusBadge";
 import { InterviewBadge } from "@/components/InterviewBadge";
 import type { Candidate } from "@/lib/types";
-import { formatDate } from "@/lib/utils";
+import { cn, formatDate } from "@/lib/utils";
 
 type SortField = "score" | "firstSeenAt" | "availableFrom";
 
@@ -122,7 +122,15 @@ export function CandidateTable({
           </thead>
           <tbody>
             {sorted.map((c) => (
-              <tr key={c._id} className="border-b border-stone-100 last:border-0">
+              <tr
+                key={c._id}
+                className={cn(
+                  "border-b border-l-4 border-stone-100 last:border-b-0",
+                  c.status === "shortlisted"
+                    ? "border-l-teal-500 bg-teal-50/40"
+                    : "border-l-transparent",
+                )}
+              >
                 {isSelectable && (
                   <td className="px-3 py-3">
                     <input
@@ -141,6 +149,15 @@ export function CandidateTable({
                     className="font-medium text-teal-800 hover:underline"
                   >
                     {c.name}
+                    {c.status === "new" && (
+                      <span
+                        className="ml-0.5 font-normal text-stone-400"
+                        title="New applicant"
+                        aria-label="New applicant"
+                      >
+                        *
+                      </span>
+                    )}
                   </Link>
                   <p className="text-xs text-stone-500">
                     {c.age ? `${c.age}yr` : "—"}
