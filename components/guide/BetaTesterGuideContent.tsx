@@ -60,7 +60,7 @@ function ExternalLink({ href, children }: { href: string; children: React.ReactN
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="font-medium text-coral-700 underline decoration-coral-200 underline-offset-2 hover:text-coral-800"
+      className="font-medium text-jade-700 underline decoration-jade-200 underline-offset-2 hover:text-jade-800"
     >
       {children}
     </a>
@@ -70,7 +70,7 @@ function ExternalLink({ href, children }: { href: string; children: React.ReactN
 export function BetaTesterGuideContent() {
   return (
     <article className="prose-guide space-y-10">
-      <header className="rounded-xl border border-coral-100 bg-coral-50/60 px-5 py-4">
+      <header className="rounded-xl border border-jade-100 bg-jade-50/60 px-5 py-4">
         <p className="text-stone-700">
           Thanks for helping us test! This guide walks you through setting up and using the app. No
           technical background needed.
@@ -85,7 +85,7 @@ export function BetaTesterGuideContent() {
 
       <nav className="rounded-lg border border-stone-200 bg-white p-4">
         <p className="mb-2 text-sm font-medium text-stone-900">On this page</p>
-        <ol className="list-inside list-decimal space-y-1 text-sm text-coral-700">
+        <ol className="list-inside list-decimal space-y-1 text-sm text-jade-700">
           <li>
             <a href="#what-it-does" className="hover:underline">
               What this app does
@@ -145,7 +145,7 @@ export function BetaTesterGuideContent() {
             Open{" "}
             <Link
               href="/sign-up"
-              className="font-medium text-coral-700 underline decoration-coral-200 underline-offset-2 hover:text-coral-800"
+              className="font-medium text-jade-700 underline decoration-jade-200 underline-offset-2 hover:text-jade-800"
             >
               helper-comparison.vercel.app/sign-up
             </Link>
@@ -474,7 +474,7 @@ export function BetaTesterGuideContent() {
       <Section id="checklist" title="Quick checklist">
         <ul className="space-y-2">
           {[
-            <>Signed up at <Link href="/sign-up" className="text-coral-700 hover:underline">helper-comparison.vercel.app/sign-up</Link></>,
+            <>Signed up at <Link href="/sign-up" className="text-jade-700 hover:underline">helper-comparison.vercel.app/sign-up</Link></>,
             <>Connected HelperPlace with correct applicants URL (<code className="rounded bg-stone-100 px-1 text-sm">/applicant</code>)</>,
             <>Enabled daily scrape and saved</>,
             <>Set target start date and preferences, then saved</>,

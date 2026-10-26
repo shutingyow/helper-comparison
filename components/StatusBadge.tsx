@@ -22,7 +22,7 @@ interface StatusBadgeProps {
 }
 
 /**
- * Quiet pipeline label — outline style, no rainbow of status colors competing with score.
+ * Quiet pipeline label — stone outlines; accent only for shortlisted/hired.
  * Returns null for "new" unless showNew is set.
  */
 export function StatusBadge({ status, className, showNew = false }: StatusBadgeProps) {
@@ -32,9 +32,10 @@ export function StatusBadge({ status, className, showNew = false }: StatusBadgeP
     <Badge
       variant="outline"
       className={cn(
-        "font-normal text-stone-600",
+        "font-normal text-stone-600 border-stone-200",
+        status === "shortlisted" && "border-jade-200 bg-jade-50 text-jade-800",
         status === "rejected" && "text-stone-400",
-        status === "hired" && "border-emerald-200 text-emerald-800",
+        status === "hired" && "border-jade-200 bg-jade-50 text-jade-800",
         className,
       )}
       title={STATUS_PIPELINE_HINT[status]}

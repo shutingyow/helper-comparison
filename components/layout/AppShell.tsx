@@ -32,7 +32,7 @@ export function Sidebar() {
   return (
     <aside className="hidden w-56 shrink-0 border-r border-stone-200/80 bg-white md:flex md:flex-col">
       <div className="flex items-center gap-2 border-b border-stone-100 px-5 py-5">
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-coral-100 text-coral-700">
+        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-jade-100 text-jade-700">
           <Home className="h-5 w-5" />
         </div>
         <div>
@@ -50,7 +50,7 @@ export function Sidebar() {
               className={cn(
                 "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
                 active
-                  ? "bg-coral-50 text-coral-800"
+                  ? "bg-jade-50 text-jade-800"
                   : "text-stone-600 hover:bg-stone-50 hover:text-stone-900",
               )}
             >
@@ -108,7 +108,7 @@ export function MobileNav() {
                 className={cn(
                   "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium",
                   active
-                    ? "bg-coral-50 text-coral-800"
+                    ? "bg-jade-50 text-jade-800"
                     : "text-stone-600 hover:bg-stone-50",
                 )}
               >
@@ -141,7 +141,7 @@ export function MobileNav() {
               href={href}
               className={cn(
                 "flex flex-1 flex-col items-center gap-0.5 py-2 text-[10px] font-medium",
-                active ? "text-coral-700" : "text-stone-500",
+                active ? "text-jade-700" : "text-stone-500",
               )}
             >
               <Icon className="h-5 w-5" />

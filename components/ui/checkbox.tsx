@@ -13,7 +13,7 @@ export function Checkbox({ className, label, id, ...props }: CheckboxProps) {
       <input
         type="checkbox"
         id={id}
-        className="h-4 w-4 rounded border-stone-300 text-coral-600 focus:ring-coral-500"
+        className="h-4 w-4 rounded border-stone-300 text-jade-600 focus:ring-jade-500/40"
         {...props}
       />
       {label && <span className="text-sm text-stone-700">{label}</span>}

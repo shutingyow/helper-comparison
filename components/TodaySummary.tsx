@@ -63,7 +63,7 @@ export function TodaySummary(props: TodaySummaryProps) {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-semibold text-teal-800">{newCount}</p>
+            <p className="text-2xl font-semibold text-jade-800">{newCount}</p>
           </CardContent>
         </Card>
         <Card>
@@ -91,12 +91,12 @@ export function TodaySummary(props: TodaySummaryProps) {
             {upcomingInterviews.map((c) => (
               <li
                 key={c._id}
-                className="flex items-center justify-between rounded-lg border border-coral-100 bg-coral-50/40 px-4 py-3"
+                className="flex items-center justify-between rounded-lg border border-jade-100 bg-jade-50/50 px-4 py-3"
               >
                 <div>
                   <Link
                     href={`/candidates/${c._id}`}
-                    className="font-medium text-coral-800 hover:underline"
+                    className="font-medium text-jade-800 hover:underline"
                   >
                     {c.name}
                   </Link>

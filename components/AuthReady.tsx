@@ -69,7 +69,7 @@ export function AuthReady({ children }: { children: ReactNode }) {
           </p>
           <button
             type="button"
-            className="mt-4 rounded-lg bg-coral-600 px-4 py-2 text-sm font-medium text-white hover:bg-coral-700"
+            className="mt-4 rounded-lg bg-jade-600 px-4 py-2 text-sm font-medium text-white hover:bg-jade-700"
             onClick={() => window.location.reload()}
           >
             Retry

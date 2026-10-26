@@ -127,7 +127,7 @@ export function CandidateTable({
                 className={cn(
                   "border-b border-l-[5px] border-stone-100 last:border-b-0",
                   c.status === "shortlisted"
-                    ? "border-l-amber-500 bg-amber-50/70"
+                    ? "border-l-jade-600 bg-jade-50/60"
                     : "border-l-transparent",
                 )}
               >
@@ -147,13 +147,13 @@ export function CandidateTable({
                   <div className="flex flex-wrap items-center gap-1.5">
                     <Link
                       href={`/candidates/${c._id}`}
-                      className="font-medium text-teal-800 hover:underline"
+                      className="font-medium text-jade-800 hover:underline"
                     >
                       {c.name}
                     </Link>
                     {c.status === "new" && (
                       <span
-                        className="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-coral-800 bg-coral-100 ring-1 ring-inset ring-coral-500/25"
+                        className="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-jade-800 bg-jade-50 ring-1 ring-inset ring-jade-200"
                         title="New applicant"
                       >
                         New

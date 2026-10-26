@@ -13,7 +13,7 @@ export default function SignUpPage() {
           <p className="mt-3 text-sm">
             <Link
               href="/guide"
-              className="font-medium text-coral-700 underline decoration-coral-200 underline-offset-2 hover:text-coral-800"
+              className="font-medium text-jade-700 underline decoration-jade-200 underline-offset-2 hover:text-jade-800"
             >
               Need help? Read the setup guide
             </Link>

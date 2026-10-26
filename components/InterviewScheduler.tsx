@@ -151,7 +151,7 @@ export function InterviewScheduler({ candidate }: { candidate: Candidate }) {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between gap-4">
           <CardTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5 text-coral-600" />
+            <Calendar className="h-5 w-5 text-jade-600" />
             Interview
           </CardTitle>
           <div className="flex flex-wrap gap-2">
@@ -239,7 +239,7 @@ export function InterviewScheduler({ candidate }: { candidate: Candidate }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Video className="h-5 w-5 text-coral-600" />
+          <Video className="h-5 w-5 text-jade-600" />
           {hasInterview ? "Edit interview" : "Schedule interview"}
         </CardTitle>
       </CardHeader>

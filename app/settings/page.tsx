@@ -70,7 +70,7 @@ export default function SettingsPage() {
         <p className="mt-2 text-sm">
           <Link
             href="/guide"
-            className="font-medium text-coral-700 underline decoration-coral-200 underline-offset-2 hover:text-coral-800"
+            className="font-medium text-jade-700 underline decoration-jade-200 underline-offset-2 hover:text-jade-800"
           >
             Need help? Read the setup guide
           </Link>
@@ -136,7 +136,7 @@ export default function SettingsPage() {
                     className="mt-1"
                   />
                   {credentials?.hasPassword && (
-                    <p className="mt-1 text-xs text-emerald-700">Password saved securely</p>
+                    <p className="mt-1 text-xs text-jade-700">Password saved securely</p>
                   )}
                 </div>
 

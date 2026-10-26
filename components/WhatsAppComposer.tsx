@@ -60,9 +60,9 @@ function TrackingProgress({ status }: { status: OutreachTrackingStatus }) {
             <span
               className={
                 current
-                  ? "font-medium text-coral-700"
+                  ? "font-medium text-jade-700"
                   : done
-                    ? "text-emerald-700"
+                    ? "text-jade-700"
                     : "text-stone-400"
               }
             >

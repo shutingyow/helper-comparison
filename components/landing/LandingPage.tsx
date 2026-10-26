@@ -43,7 +43,7 @@ function RankedListMock({ className = "" }: { className?: string }) {
 
   return (
     <div
-      className={`landing-mock overflow-hidden rounded-lg border border-[var(--landing-ink)]/10 bg-[#f7f8f7]/95 ${className}`}
+      className={`landing-mock overflow-hidden rounded-lg border border-[var(--landing-ink)]/10 bg-[var(--surface)]/95 ${className}`}
       aria-hidden
     >
       <div className="flex items-center justify-between border-b border-[var(--landing-ink)]/8 px-4 py-3">
@@ -95,7 +95,7 @@ function RankedListMock({ className = "" }: { className?: string }) {
 function ProductPreviewMock() {
   return (
     <div
-      className="landing-preview-panel grid overflow-hidden rounded-lg border border-[var(--landing-ink)]/10 bg-[#f7f8f7]/95 sm:grid-cols-[1.15fr_0.85fr]"
+      className="landing-preview-panel grid overflow-hidden rounded-lg border border-[var(--landing-ink)]/10 bg-[var(--surface)]/95 sm:grid-cols-[1.15fr_0.85fr]"
       aria-hidden
     >
       <div className="border-b border-[var(--landing-ink)]/8 sm:border-r sm:border-b-0">
@@ -138,7 +138,7 @@ function ProductPreviewMock() {
           </div>
         </div>
       </div>
-      <div className="flex flex-col bg-[#eef2f0]/80">
+      <div className="flex flex-col bg-[var(--jade-50)]/80">
         <div className="border-b border-[var(--landing-ink)]/8 px-4 py-3 sm:px-5">
           <p className="font-[family-name:var(--font-source-sans)] text-xs font-semibold tracking-[0.06em] text-[var(--landing-ink-soft)] uppercase">
             WhatsApp

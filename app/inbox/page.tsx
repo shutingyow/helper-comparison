@@ -128,10 +128,10 @@ function InboxPageContent() {
                 onClick={() => setInboxFilter(option.value)}
                 aria-pressed={selected}
                 className={cn(
-                  "rounded-lg px-3 py-1.5 text-sm font-medium transition-colors",
+                  "rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors",
                   selected
-                    ? "bg-stone-900 text-white"
-                    : "bg-stone-100 text-stone-600 hover:bg-stone-200 hover:text-stone-800",
+                    ? "border-jade-600 bg-jade-600 text-white"
+                    : "border-stone-200 bg-white text-stone-600 hover:border-stone-300 hover:bg-stone-50 hover:text-stone-800",
                 )}
               >
                 {option.label}

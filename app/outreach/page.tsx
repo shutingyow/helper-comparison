@@ -40,7 +40,7 @@ function WorkflowGuide() {
         <ol className="grid gap-4 sm:grid-cols-3">
           {WORKFLOW_STEPS.map((step, i) => (
             <li key={step.n} className="flex gap-3">
-              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-coral-600 text-xs font-semibold text-white">
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-jade-600 text-xs font-semibold text-white">
                 {step.n}
               </span>
               <div className="min-w-0">

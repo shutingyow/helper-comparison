@@ -1,36 +1,57 @@
 @import "tailwindcss";
 
+/*
+  Locked palette — ink + soft paper + deep jade
+  Single accent for CTAs, shortlisted, NEW, links, focus rings.
+  Status/pipeline uses stone + accent tints only (no coral/amber/teal rainbow).
+*/
 :root {
-  --background: #fbf9f7;
+  /* Surfaces & ink */
+  --background: #fafaf9;
   --foreground: #1c1917;
-  --coral-50: #fef5f3;
-  --coral-100: #fde8e4;
-  --coral-500: #e07a5f;
-  --coral-600: #d4694f;
-  --coral-700: #b8553f;
-  --coral-800: #964535;
-  --warm-50: #fbf9f7;
+  --surface: #ffffff;
+  --surface-muted: #f5f5f4;
+  --border: #e7e5e4;
+  --muted: #a8a29e;
+  --muted-fg: #78716c;
 
-  /* Landing: cool stone/ink + deep jade */
+  /* Accent: deep jade / forest */
+  --jade-50: #f0f7f5;
+  --jade-100: #d8ebe6;
+  --jade-200: #b3d6cd;
+  --jade-500: #0f766e;
+  --jade-600: #0d6b64;
+  --jade-700: #0b5f59;
+  --jade-800: #084c47;
+  --jade-fg: #f4faf8;
+
+  /* Aliases used by landing + app */
+  --accent: var(--jade-500);
+  --accent-soft: var(--jade-50);
+  --accent-muted: var(--jade-100);
+  --accent-strong: var(--jade-700);
+  --accent-fg: var(--jade-fg);
+
   --landing-bg: #e8ebe9;
   --landing-ink: #151a18;
   --landing-ink-soft: #2a3430;
   --landing-muted: #5c6b64;
-  --landing-jade: #0f766e;
-  --landing-jade-deep: #0b5f59;
-  --landing-jade-fg: #f4faf8;
+  --landing-jade: var(--jade-500);
+  --landing-jade-deep: var(--jade-700);
+  --landing-jade-fg: var(--jade-fg);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --color-coral-50: var(--coral-50);
-  --color-coral-100: var(--coral-100);
-  --color-coral-500: var(--coral-500);
-  --color-coral-600: var(--coral-600);
-  --color-coral-700: var(--coral-700);
-  --color-coral-800: var(--coral-800);
-  --color-warm-50: var(--warm-50);
+  --color-jade-50: var(--jade-50);
+  --color-jade-100: var(--jade-100);
+  --color-jade-200: var(--jade-200);
+  --color-jade-500: var(--jade-500);
+  --color-jade-600: var(--jade-600);
+  --color-jade-700: var(--jade-700);
+  --color-jade-800: var(--jade-800);
+  --color-warm-50: var(--background);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
@@ -43,15 +64,15 @@ body {
 
 .landing-atmosphere {
   background:
-    radial-gradient(ellipse 90% 70% at 12% 18%, rgba(15, 118, 110, 0.18), transparent 55%),
-    radial-gradient(ellipse 70% 55% at 88% 12%, rgba(68, 84, 78, 0.14), transparent 50%),
-    radial-gradient(ellipse 80% 60% at 70% 88%, rgba(15, 118, 110, 0.12), transparent 55%),
-    linear-gradient(165deg, #f2f4f3 0%, #e4e9e6 42%, #d5ddd8 100%);
+    radial-gradient(ellipse 90% 70% at 12% 18%, rgba(15, 118, 110, 0.14), transparent 55%),
+    radial-gradient(ellipse 70% 55% at 88% 12%, rgba(68, 84, 78, 0.1), transparent 50%),
+    radial-gradient(ellipse 80% 60% at 70% 88%, rgba(15, 118, 110, 0.1), transparent 55%),
+    linear-gradient(165deg, #fafaf9 0%, #f0f2f1 42%, #e4e9e6 100%);
   animation: landing-drift 18s ease-in-out infinite alternate;
 }
 
 .landing-grain {
-  opacity: 0.35;
+  opacity: 0.28;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.45'/%3E%3C/svg%3E");
   background-size: 180px 180px;
   mix-blend-mode: multiply;

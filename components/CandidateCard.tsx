@@ -32,7 +32,7 @@ export function CandidateCard({
     <div
       className={cn(
         "rounded-xl border border-stone-200/80 bg-white p-4 shadow-sm",
-        isShortlisted && "border-l-[5px] border-l-amber-500 bg-amber-50/70",
+        isShortlisted && "border-l-[5px] border-l-jade-600 bg-jade-50/60",
         className,
       )}
     >
@@ -52,13 +52,13 @@ export function CandidateCard({
               <div className="flex flex-wrap items-center gap-1.5">
                 <Link
                   href={`/candidates/${candidate._id}`}
-                  className="font-semibold text-stone-900 hover:text-coral-700"
+                  className="font-semibold text-stone-900 hover:text-jade-700"
                 >
                   {candidate.name}
                 </Link>
                 {isNew && (
                   <span
-                    className="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-coral-800 bg-coral-100 ring-1 ring-inset ring-coral-500/25"
+                    className="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-jade-800 bg-jade-50 ring-1 ring-inset ring-jade-200"
                     title="New applicant"
                   >
                     New

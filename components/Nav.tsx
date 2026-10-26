@@ -17,13 +17,13 @@ export function Nav() {
   if (pathname === "/login") return null;
 
   return (
-    <header className="border-b border-zinc-200 bg-white">
+    <header className="border-b border-stone-200 bg-white">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
         <div>
-          <p className="text-xs font-medium uppercase tracking-wide text-teal-700">
+          <p className="text-xs font-medium uppercase tracking-wide text-jade-700">
             Helper Hub
           </p>
-          <h1 className="text-lg font-semibold text-zinc-900">
+          <h1 className="text-lg font-semibold text-stone-900">
             Application manager
           </h1>
         </div>
@@ -35,8 +35,8 @@ export function Nav() {
               className={cn(
                 "rounded-lg px-3 py-1.5 text-sm font-medium transition-colors",
                 pathname === link.href || pathname.startsWith(`${link.href}/`)
-                  ? "bg-teal-50 text-teal-800"
-                  : "text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900",
+                  ? "bg-jade-50 text-jade-800"
+                  : "text-stone-600 hover:bg-stone-50 hover:text-stone-900",
               )}
             >
               {link.label}

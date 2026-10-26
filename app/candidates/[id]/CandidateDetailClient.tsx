@@ -49,7 +49,7 @@ export function CandidateDetailClient({ id }: { id: string }) {
     <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6 sm:py-8">
       <Link
         href="/inbox"
-        className="mb-4 inline-flex items-center gap-1 text-sm text-stone-500 hover:text-coral-700"
+        className="mb-4 inline-flex items-center gap-1 text-sm text-stone-500 hover:text-jade-700"
       >
         <ArrowLeft className="h-4 w-4" />
         Back to inbox
@@ -214,7 +214,7 @@ function CandidateProfile({
                 <p className="mt-1 text-sm text-stone-600">{job.duties}</p>
                 <span
                   className={`mt-1 inline-block text-xs ${
-                    job.hasReferenceLetter ? "text-emerald-700" : "text-stone-400"
+                    job.hasReferenceLetter ? "text-jade-700" : "text-stone-400"
                   }`}
                 >
                   {job.hasReferenceLetter

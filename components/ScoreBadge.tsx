@@ -19,12 +19,13 @@ export function ScoreBadge({
   showWhy?: boolean;
 }) {
   const value = score ?? candidate?.score ?? 0;
+  /* Accent-tint scale — no competing teal/amber greens */
   const tone =
     value >= 70
-      ? "bg-teal-100 text-teal-800"
+      ? "bg-jade-100 text-jade-800"
       : value >= 40
-        ? "bg-amber-100 text-amber-900"
-        : "bg-stone-100 text-stone-700";
+        ? "bg-stone-100 text-stone-700"
+        : "bg-stone-50 text-stone-500";
 
   const badge = (
     <Badge

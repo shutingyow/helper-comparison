@@ -13,9 +13,9 @@ export const OUTREACH_STATUS_LABELS: Record<OutreachTrackingStatus, string> = {
 
 const OUTREACH_STATUS_STYLES: Record<OutreachTrackingStatus, string> = {
   not_contacted: "border-stone-200 bg-stone-50 text-stone-600",
-  opened: "border-sky-200 bg-sky-50 text-sky-800",
-  sent: "border-amber-200 bg-amber-50 text-amber-900",
-  replied: "border-emerald-200 bg-emerald-50 text-emerald-800",
+  opened: "border-jade-100 bg-jade-50 text-jade-800",
+  sent: "border-stone-200 bg-stone-100 text-stone-700",
+  replied: "border-jade-200 bg-jade-100 text-jade-800",
 };
 
 export function getOutreachTrackingStatus(

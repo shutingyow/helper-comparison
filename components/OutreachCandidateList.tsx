@@ -158,7 +158,7 @@ export function OutreachCandidateList({
                 <tr
                   key={c._id}
                   className={`border-b border-stone-100 last:border-0 ${
-                    selectedIds.has(c._id) ? "bg-coral-50/40" : ""
+                    selectedIds.has(c._id) ? "bg-jade-50/40" : ""
                   }`}
                 >
                   <td className="px-3 py-3">
@@ -175,7 +175,7 @@ export function OutreachCandidateList({
                   <td className="px-4 py-3">
                     <Link
                       href={`/candidates/${c._id}`}
-                      className="font-medium text-teal-800 hover:underline"
+                      className="font-medium text-jade-800 hover:underline"
                     >
                       {c.name}
                     </Link>
@@ -212,7 +212,7 @@ export function OutreachCandidateList({
               key={c._id}
               className={`flex cursor-pointer gap-3 rounded-xl border p-4 ${
                 selectedIds.has(c._id)
-                  ? "border-coral-300 bg-coral-50/40"
+                  ? "border-jade-300 bg-jade-50/40"
                   : "border-stone-200 bg-white"
               }`}
             >
@@ -226,7 +226,7 @@ export function OutreachCandidateList({
                 <div className="flex flex-wrap items-center gap-2">
                   <Link
                     href={`/candidates/${c._id}`}
-                    className="font-medium text-teal-800 hover:underline"
+                    className="font-medium text-jade-800 hover:underline"
                     onClick={(e) => e.stopPropagation()}
                   >
                     {c.name}
