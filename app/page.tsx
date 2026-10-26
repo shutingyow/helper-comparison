@@ -4,7 +4,7 @@ import { LandingPage } from "@/components/landing/LandingPage";
 export const metadata: Metadata = {
   title: "Helper Hub",
   description:
-    "Rank HelperPlace applicants against your preferences and manage hiring outreach in one place.",
+    "Find the perfect helper match without a middleman or agency fees. Rank HelperPlace applicants by your preferences and message on WhatsApp.",
 };
 
 export default function Home() {
