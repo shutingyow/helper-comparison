@@ -3,25 +3,6 @@ import type { CandidateStatus } from "@/lib/types";
 import { STATUS_LABELS } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-const statusVariant: Record<
-  CandidateStatus,
-  | "new"
-  | "shortlisted"
-  | "messaged"
-  | "interview_scheduled"
-  | "interviewing"
-  | "rejected"
-  | "hired"
-> = {
-  new: "new",
-  shortlisted: "shortlisted",
-  messaged: "messaged",
-  interview_scheduled: "interview_scheduled",
-  interviewing: "interviewing",
-  rejected: "rejected",
-  hired: "hired",
-};
-
 /** Short pipeline context for tooltips */
 const STATUS_PIPELINE_HINT: Record<CandidateStatus, string> = {
   new: "Pipeline: New — not yet shortlisted",
@@ -36,13 +17,26 @@ const STATUS_PIPELINE_HINT: Record<CandidateStatus, string> = {
 interface StatusBadgeProps {
   status: CandidateStatus;
   className?: string;
+  /** When true, show "New". Lists hide it so score stays the visual hero. */
+  showNew?: boolean;
 }
 
-export function StatusBadge({ status, className }: StatusBadgeProps) {
+/**
+ * Quiet pipeline label — outline style, no rainbow of status colors competing with score.
+ * Returns null for "new" unless showNew is set.
+ */
+export function StatusBadge({ status, className, showNew = false }: StatusBadgeProps) {
+  if (status === "new" && !showNew) return null;
+
   return (
     <Badge
-      variant={statusVariant[status]}
-      className={cn(className)}
+      variant="outline"
+      className={cn(
+        "font-normal text-stone-600",
+        status === "rejected" && "text-stone-400",
+        status === "hired" && "border-emerald-200 text-emerald-800",
+        className,
+      )}
       title={STATUS_PIPELINE_HINT[status]}
     >
       {STATUS_LABELS[status]}

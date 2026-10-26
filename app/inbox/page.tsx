@@ -14,7 +14,6 @@ import { LoadingState } from "@/components/LoadingState";
 import { ConvexGuard } from "@/components/ConvexGuard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
 import {
   filterInboxCandidates,
   INBOX_FILTER_OPTIONS,
@@ -22,6 +21,7 @@ import {
   isInboxFilter,
   type InboxFilter,
 } from "@/lib/inboxFilters";
+import { cn } from "@/lib/utils";
 import type { Doc } from "@/convex/_generated/dataModel";
 
 type OutreachMessage = Doc<"outreachMessages">;
@@ -77,13 +77,12 @@ function InboxPageContent() {
       <header className="mb-6">
         <h1 className="text-2xl font-bold text-stone-900">Inbox</h1>
         <p className="mt-1 text-sm text-stone-500">
-          All active candidates — filter by pipeline stage, search by name, or sort
-          by score, date, or start date.
+          Ranked by score — shortlist, message, or schedule interviews from the top.
         </p>
       </header>
 
-      <div className="mb-4 flex flex-wrap items-end gap-3">
-        <div className="min-w-[200px] flex-1 max-w-md">
+      <div className="mb-4 space-y-3">
+        <div className="max-w-md">
           <label htmlFor="inbox-search" className="mb-1 block text-xs text-stone-500">
             Search
           </label>
@@ -114,20 +113,32 @@ function InboxPageContent() {
             )}
           </div>
         </div>
-        <label className="flex flex-col gap-1 text-xs text-stone-500">
-          Filter by
-          <Select
-            value={inboxFilter}
-            onChange={(e) => setInboxFilter(e.target.value as InboxFilter)}
-            className="min-w-[180px]"
-          >
-            {INBOX_FILTER_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
+
+        <div
+          className="flex flex-wrap gap-1.5"
+          role="group"
+          aria-label="Filter candidates"
+        >
+          {INBOX_FILTER_OPTIONS.map((option) => {
+            const selected = inboxFilter === option.value;
+            return (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => setInboxFilter(option.value)}
+                aria-pressed={selected}
+                className={cn(
+                  "rounded-lg px-3 py-1.5 text-sm font-medium transition-colors",
+                  selected
+                    ? "bg-stone-900 text-white"
+                    : "bg-stone-100 text-stone-600 hover:bg-stone-200 hover:text-stone-800",
+                )}
+              >
                 {option.label}
-              </option>
-            ))}
-          </Select>
-        </label>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       <ConvexGuard>

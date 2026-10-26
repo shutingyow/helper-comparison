@@ -99,7 +99,7 @@ function CandidateProfile({
             <div className="flex flex-wrap items-center gap-2.5">
               <h1 className="text-2xl font-bold text-stone-900">{candidate.name}</h1>
               <ScoreBadge candidate={candidate} size="lg" />
-              <StatusBadge status={candidate.status} />
+              <StatusBadge status={candidate.status} showNew />
             </div>
             <p className="mt-1 text-sm text-stone-500">
               {[candidate.nationality, candidate.gender, candidate.age && `${candidate.age} yrs`]

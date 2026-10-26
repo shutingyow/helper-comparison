@@ -1,35 +1,23 @@
 import { getOutreachTrackingStatus } from "@/components/OutreachStatusBadge";
-import { getCandidatePhoneE164 } from "@/lib/whatsapp";
 import type { Candidate } from "@/lib/types";
 import type { Doc } from "@/convex/_generated/dataModel";
 
 type OutreachMessage = Doc<"outreachMessages">;
 
+/** Curated Inbox filters — ranking-first triage, not full CRM. */
 export type InboxFilter =
   | "all"
-  | "new"
   | "shortlisted"
-  | "passes_hard_filters"
-  | "fails_hard_filters"
-  | "no_phone"
   | "messaged"
-  | "replied"
-  | "interview_scheduled"
-  | "interviewing"
-  | "hired";
+  | "interview"
+  | "fails_hard_filters";
 
 export const INBOX_FILTER_OPTIONS: { value: InboxFilter; label: string }[] = [
   { value: "all", label: "All" },
-  { value: "new", label: "New / unreviewed" },
   { value: "shortlisted", label: "Shortlisted" },
-  { value: "passes_hard_filters", label: "Passes hard filters" },
-  { value: "fails_hard_filters", label: "Fails hard filters" },
-  { value: "no_phone", label: "No WhatsApp phone" },
   { value: "messaged", label: "Messaged" },
-  { value: "replied", label: "Replied (WhatsApp)" },
-  { value: "interview_scheduled", label: "Interview scheduled" },
-  { value: "interviewing", label: "Interviewing" },
-  { value: "hired", label: "Hired" },
+  { value: "interview", label: "Interview" },
+  { value: "fails_hard_filters", label: "Failed filters" },
 ];
 
 export const INBOX_FILTER_LABELS: Record<InboxFilter, string> = Object.fromEntries(
@@ -51,6 +39,14 @@ function hasBeenMessaged(
   return outreachStatus === "sent" || outreachStatus === "replied";
 }
 
+function isInInterviewPipeline(candidate: Candidate): boolean {
+  return (
+    candidate.status === "interview_scheduled" ||
+    candidate.status === "interviewing" ||
+    candidate.interviewStatus === "scheduled"
+  );
+}
+
 export function matchesInboxFilter(
   candidate: Candidate,
   filter: InboxFilter,
@@ -58,30 +54,17 @@ export function matchesInboxFilter(
 ): boolean {
   switch (filter) {
     case "all":
-      return true;
-    case "new":
-      return candidate.status === "new";
+      // Default triage: hide hard-filter failures so score ranking stays useful.
+      return candidate.passesHardFilters;
     case "shortlisted":
       return candidate.status === "shortlisted";
-    case "passes_hard_filters":
-      return candidate.passesHardFilters;
+    case "messaged":
+      // Combines sent + replied outreach states.
+      return hasBeenMessaged(candidate, latestOutreach);
+    case "interview":
+      return isInInterviewPipeline(candidate);
     case "fails_hard_filters":
       return !candidate.passesHardFilters;
-    case "no_phone":
-      return !getCandidatePhoneE164(candidate);
-    case "messaged":
-      return hasBeenMessaged(candidate, latestOutreach);
-    case "replied":
-      return getOutreachTrackingStatus(latestOutreach) === "replied";
-    case "interview_scheduled":
-      return (
-        candidate.status === "interview_scheduled" ||
-        candidate.interviewStatus === "scheduled"
-      );
-    case "interviewing":
-      return candidate.status === "interviewing";
-    case "hired":
-      return candidate.status === "hired";
     default: {
       const _exhaustive: never = filter;
       return _exhaustive;
@@ -94,7 +77,6 @@ export function filterInboxCandidates(
   filter: InboxFilter,
   latestByCandidate: Map<string, OutreachMessage | null>,
 ): Candidate[] {
-  if (filter === "all") return candidates;
   return candidates.filter((c) =>
     matchesInboxFilter(c, filter, latestByCandidate.get(c._id)),
   );
